@@ -5,6 +5,7 @@ import login from './routes/auth/login.js'
 import { errorHandler } from './middleware/errorHandler.js';
 import cookieParser from 'cookie-parser';
 import logout from './routes/auth/logout.js';
+import refresh from './routes/auth/refresh.js';
 
 const app = express()
 
@@ -14,6 +15,7 @@ app.use(cookieParser())
 app.use('/sign-up', signup)
 app.use('/login', login)
 app.use('/logout', logout)
+app.use('/refresh', refresh)
 
 app.use(errorHandler);
 

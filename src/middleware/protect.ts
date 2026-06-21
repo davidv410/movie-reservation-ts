@@ -6,7 +6,6 @@ import { AppError } from '../types.js';
 export const protect = (req: Request, res: Response, next: NextFunction) => {
 
     const token = req.cookies.token
-    console.log(req.cookies)
 
     try{
         if(!token){ throw new AppError(400, 'Access denied'); }

@@ -5,6 +5,7 @@ import type { loginSchemaBody, registerSchemaBody } from '../validation/schemas.
 import bcrypt from 'bcrypt'
 import { AppError } from '../types.js'
 import { accessToken, refreshToken } from '../utils/generateToken.js'
+import jwt from 'jsonwebtoken'
 
 
 export class AuthService {
@@ -33,10 +34,25 @@ export class AuthService {
 
         await db.update(users).set({ refreshToken: generateRefreshToken }).where(eq(users.id, user.id))
 
-        return { status: 200, message: "User logged in", generateAccessToken, generateRefreshToken }
+        return { generateAccessToken, generateRefreshToken }
     }
 
     async logoutUser(id: number){
         await db.update(users).set({ refreshToken: null }).where(eq(users.id, id))
+    }
+
+    async refreshUser(refreshToken: string){
+        if(!refreshToken){
+            throw new AppError(400, "No refresh token")
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }
+
+        const [user] = await db.select().from(users).where(eq(users.id, decoded.id))
+        if(!user || user.refreshToken !== refreshToken){ throw new AppError(400, "Bad refresh token") }
+
+        const generateAccessToken = accessToken(user.id, user.role, user.email)
+
+        return { generateAccessToken }
     }
 }

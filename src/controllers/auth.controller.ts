@@ -41,7 +41,7 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
                 maxAge: 7 * 24 * 60 * 60 * 1000  //7d
         })
 
-        res.status(response.status).json(response.message)
+        res.status(200).json({ message: "User logged in." })
     }catch(err){
         next(err)
     }
@@ -49,7 +49,6 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
 
 export const logout = async (req:Request, res:Response, next:NextFunction) =>{
     try{
-        console.log(req.user)
         if (!req.user) {
             throw new AppError(401, 'Unauthorized');
         }
@@ -60,6 +59,23 @@ export const logout = async (req:Request, res:Response, next:NextFunction) =>{
         res.clearCookie('refreshToken')
 
         res.status(200).json({ message: "User logged out" })
+    }catch(err){
+        next(err)
+    }
+}
+
+export const refresh = async (req:Request, res:Response, next:NextFunction) =>{
+    try{
+        const response = await authService.refreshUser(req.cookies.refreshToken)
+
+        res.cookie('token', response.generateAccessToken, {
+                httpOnly: true,
+                secure: true, 
+                sameSite: 'none',
+                maxAge: 60 * 60 * 1000  //1h
+        })
+
+        return res.status(200).json({ message: "Token refreshed!" })
     }catch(err){
         next(err)
     }
