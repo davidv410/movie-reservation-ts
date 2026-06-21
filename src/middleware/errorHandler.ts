@@ -7,6 +7,7 @@ export const errorHandler = (err: unknown, req: Request, res: Response, next: Ne
     }
     
     if(err instanceof Error){
+        console.log(err)
         return res.status(500).json({ message: 'Server error' })
     }
 }

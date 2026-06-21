@@ -7,6 +7,8 @@ import cookieParser from 'cookie-parser';
 import logout from './routes/auth/logout.js';
 import refresh from './routes/auth/refresh.js';
 
+import { moviesRouter } from './routes/movies/movies.routes.js';
+
 const app = express()
 
 app.use(express.json())
@@ -16,6 +18,7 @@ app.use('/sign-up', signup)
 app.use('/login', login)
 app.use('/logout', logout)
 app.use('/refresh', refresh)
+app.use('/movies', moviesRouter)
 
 app.use(errorHandler);
 
