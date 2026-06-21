@@ -1,8 +1,8 @@
 import type { createMovieBody, updateMovieBody } from "../validation/schemas.js";
 import { db } from "../db/db.js";
-import { movies } from "../db/schema.js";
+import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 export class MovieService{
     async findMovies(){
@@ -18,9 +18,22 @@ export class MovieService{
     }
 
     async createMovie(data: createMovieBody){
-        const [movie] = await db.insert(movies).values({ ...data }).returning()
+        const { genreIds, ...movieData } = data
+        console.log(genreIds)
+
+        const [movie] = await db.insert(movies).values({ ...movieData }).returning()
         if(!movie){ throw new AppError(400, "Failed to create movie") }
-        return movie
+
+        const findGenre = await db.select().from(genres).where(inArray(genres.id, genreIds))
+        if (findGenre.length !== genreIds.length) {
+            throw new AppError(404, "One or more genres not found");
+        }
+
+        const [genre] = await db.insert(movieGenres).values(
+            genreIds.map((genreId) => ({ movieId: movie.id, genreId }))
+        ).returning()
+
+        return { movie, genre}
     }
 
     async updateMovie(movieId: string, data: updateMovieBody){

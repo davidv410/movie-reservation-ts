@@ -16,6 +16,7 @@ export const createMovieSchema = z.object({
   description: z.string().optional(),
   posterUrl: z.string().url("Invalid URL").optional(),
   durationMinutes: z.number().int().positive("Duration must be a positive number"),
+  genreIds: z.array(z.uuid()).min(1, "At least one genre is required")
 });
 
 export const updateMovieSchema = createMovieSchema.partial().extend({
