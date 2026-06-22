@@ -5,15 +5,11 @@ import { AppError } from "../types.js";
 import { eq, inArray } from "drizzle-orm";
 
 export class MovieService{
-    async findMovies(){
-        return await db.select().from(movies)
-    }
+    async findMovies(){ return await db.select().from(movies) }
 
     async findMovie(id: string){
         const [movie] = await db.select().from(movies).where(eq(movies.id, id))
-        if(!movie){
-            throw new AppError(404, "Movie not found")
-        }
+        if(!movie){ throw new AppError(404, "Movie not found") }
         return movie
     }
 
@@ -25,13 +21,9 @@ export class MovieService{
         if(!movie){ throw new AppError(400, "Failed to create movie") }
 
         const findGenre = await db.select().from(genres).where(inArray(genres.id, genreIds))
-        if (findGenre.length !== genreIds.length) {
-            throw new AppError(404, "One or more genres not found");
-        }
+        if (findGenre.length !== genreIds.length) { throw new AppError(404, "One or more genres not found"); }
 
-        const [genre] = await db.insert(movieGenres).values(
-            genreIds.map((genreId) => ({ movieId: movie.id, genreId }))
-        ).returning()
+        const [genre] = await db.insert(movieGenres).values( genreIds.map((genreId) => ({ movieId: movie.id, genreId })) ).returning()
 
         return { movie, genre}
     }

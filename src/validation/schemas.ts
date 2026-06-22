@@ -37,6 +37,10 @@ export const createShowtimeSchema = z.object({
 
 export const updateShowtimeSchema = createShowtimeSchema.partial()
 
+export const querySchema = z.object({
+  date: z.string().date("Invalid date format").optional()
+});
+
 export type registerSchemaBody = z.infer<typeof registerSchema>
 export type loginSchemaBody = z.infer<typeof loginSchema>
 export type createMovieBody = z.infer<typeof createMovieSchema>

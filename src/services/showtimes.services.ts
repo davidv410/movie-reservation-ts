@@ -1,19 +1,33 @@
-import { and, eq, lt, gt, or } from "drizzle-orm";
+import { and, eq, lt, gt, or, gte, lte } from "drizzle-orm";
 import { db } from "../db/db.js";
 import { showtimes } from "../db/schema.js";
 import type { createShowtimeBody, updateShowtimeBody } from "../validation/schemas.js";
 import { AppError } from "../types.js";
 
 export class ShowtimesService{
-    async findShowtimes(){
+    async findShowtimes(date?: string){
+        if(date){
+        const start = new Date(date);
+        start.setHours(0, 0, 0, 0);
+
+        const end = new Date(date);
+        end.setHours(23, 59, 59, 999);
+
+        return await db.select().from(showtimes).where(
+        and(
+            gte(showtimes.startsAt, start),
+            lte(showtimes.startsAt, end)
+            )
+        )
+
+        }
+
         return await db.select().from(showtimes)
     }
 
     async findShowtime(id: string){
         const [showtime] = await db.select().from(showtimes).where(eq(showtimes.id, id))
-        if(!showtime){
-            throw new AppError(404, "Showtime not found")
-        }
+        if(!showtime){ throw new AppError(404, "Showtime not found") }
 
         return showtime
     }

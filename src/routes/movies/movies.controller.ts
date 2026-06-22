@@ -18,9 +18,8 @@ export const findMovies = async (req: Request, res: Response, next: NextFunction
 export const findMovie = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const parsed = paramsSchema.safeParse(req.params);
-         if(!parsed.success){
-            throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst params')
-        }
+        if(!parsed.success){ throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst params') }
+
         const response = await movieService.findMovie(parsed.data.id)
 
         res.status(200).json({movie: response})
@@ -32,9 +31,7 @@ export const findMovie = async (req: Request, res: Response, next: NextFunction)
 export const createMovie = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const parsed = createMovieSchema.safeParse(req.body)
-        if(!parsed.success){
-            throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body')
-        }
+        if(!parsed.success){ throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body') }
 
         const response = await movieService.createMovie(parsed.data)
 
@@ -47,14 +44,11 @@ export const createMovie = async (req: Request, res: Response, next: NextFunctio
 export const updateMovie = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const parsedParams = paramsSchema.safeParse(req.params);
-         if(!parsedParams.success){
-            throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params')
-        }
+         if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
 
         const parsed = updateMovieSchema.safeParse(req.body)
-        if(!parsed.success){
-            throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body')
-        }
+        if(!parsed.success){ throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body') }
+
         const response = await movieService.updateMovie(parsedParams.data.id, parsed.data)
 
         res.status(200).json({ update: response })
@@ -66,9 +60,8 @@ export const updateMovie = async (req: Request, res: Response, next: NextFunctio
 export const removeMovie = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const parsed = paramsSchema.safeParse(req.params)
-        if(!parsed.success){
-            throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst params')
-        }
+        if(!parsed.success){ throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst params') }
+        
         const response = await movieService.removeMovie(parsed.data.id)
 
         res.status(200).json({ removed: response })
