@@ -9,6 +9,15 @@ export class ShowtimesService{
         return await db.select().from(showtimes)
     }
 
+    async findShowtime(id: string){
+        const [showtime] = await db.select().from(showtimes).where(eq(showtimes.id, id))
+        if(!showtime){
+            throw new AppError(404, "Showtime not found")
+        }
+
+        return showtime
+    }
+
     async createShowtimes(data: createShowtimeBody){
         const checkShowtime = await db.select().from(showtimes)
         .where(

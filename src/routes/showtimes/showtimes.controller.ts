@@ -17,9 +17,11 @@ export const findShowtimes = async (req: Request, res: Response, next: NextFunct
 
 export const findShowtime = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        // const response = await
+        const parsedParams = paramsSchema.safeParse(req.params)
+        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
+        const response = await showtimesService.findShowtime(parsedParams.data.id)
 
-        // res.status(200).json({ response })
+        res.status(200).json({ showtime: response })
     }catch(err){
         next(err)
     }
