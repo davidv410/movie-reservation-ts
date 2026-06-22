@@ -1,0 +1,61 @@
+import type { Request, Response, NextFunction } from "express";
+import { ShowtimesService } from "../../services/showtimes.services.js";
+import { createShowtimeSchema } from '../../validation/schemas.js'
+import { AppError } from "../../types.js";
+
+const showTimesService = new ShowtimesService()
+
+export const findShowtimes = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const response = await showTimesService.findShowtimes()
+
+        res.status(200).json({ response })
+    }catch(err){
+        next(err)
+    }
+}
+
+export const findShowtime = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        // const response = await
+
+        // res.status(200).json({ response })
+    }catch(err){
+        next(err)
+    }
+}
+
+export const createShowtime = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const parsed = createShowtimeSchema.safeParse(req.body)
+        if(!parsed.success){
+            throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body')
+        }
+
+        const response = await showTimesService.createShowtimes(parsed.data)
+
+        res.status(200).json({ response })
+    }catch(err){
+        next(err)
+    }
+}
+
+export const updateShowtime = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        // const response = await
+
+        // res.status(200).json({ response })
+    }catch(err){
+        next(err)
+    }
+}
+
+export const deleteShowtime = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        // const response = await
+
+        // res.status(200).json({ response })
+    }catch(err){
+        next(err)
+    }
+}

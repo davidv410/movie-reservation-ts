@@ -27,7 +27,16 @@ export const paramsSchema = z.object({
   id: z.uuid("Invalid movie id")
 });
 
+export const createShowtimeSchema = z.object({
+  movieId: z.uuid(),
+  startsAt: z.coerce.date(),
+  endsAt: z.coerce.date(),
+  hall: z.string().min(1),
+  totalSeats: z.number().int().positive(),
+});
+
 export type registerSchemaBody = z.infer<typeof registerSchema>
 export type loginSchemaBody = z.infer<typeof loginSchema>
 export type createMovieBody = z.infer<typeof createMovieSchema>
 export type updateMovieBody = z.infer<typeof updateMovieSchema>
+export type createShowtimeBody = z.infer<typeof createShowtimeSchema>

@@ -8,6 +8,7 @@ import logout from './routes/auth/logout.js';
 import refresh from './routes/auth/refresh.js';
 
 import { moviesRouter } from './routes/movies/movies.routes.js';
+import { showtimesRouter } from './routes/showtimes/showtimes.routes.js';
 
 const app = express()
 
@@ -19,6 +20,7 @@ app.use('/login', login)
 app.use('/logout', logout)
 app.use('/refresh', refresh)
 app.use('/movies', moviesRouter)
+app.use('/showtimes', showtimesRouter)
 
 app.use(errorHandler);
 
