@@ -35,8 +35,11 @@ export const createShowtimeSchema = z.object({
   totalSeats: z.number().int().positive(),
 });
 
+export const updateShowtimeSchema = createShowtimeSchema.partial()
+
 export type registerSchemaBody = z.infer<typeof registerSchema>
 export type loginSchemaBody = z.infer<typeof loginSchema>
 export type createMovieBody = z.infer<typeof createMovieSchema>
 export type updateMovieBody = z.infer<typeof updateMovieSchema>
 export type createShowtimeBody = z.infer<typeof createShowtimeSchema>
+export type updateShowtimeBody = z.infer<typeof updateShowtimeSchema>

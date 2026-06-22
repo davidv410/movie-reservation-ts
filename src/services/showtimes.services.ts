@@ -1,7 +1,7 @@
 import { and, eq, lt, gt, or } from "drizzle-orm";
 import { db } from "../db/db.js";
 import { showtimes } from "../db/schema.js";
-import type { createShowtimeBody } from "../validation/schemas.js";
+import type { createShowtimeBody, updateShowtimeBody } from "../validation/schemas.js";
 import { AppError } from "../types.js";
 
 export class ShowtimesService{
@@ -22,8 +22,15 @@ export class ShowtimesService{
         if(checkShowtime.length > 0){
             throw new AppError(400, `${data.hall} is not available at that specific time.`)
         }
-        
+
         const [createShowtime] = await db.insert(showtimes).values({ ...data }).returning()
         return createShowtime
+    }
+
+    async updateShowtime(id: string, data: updateShowtimeBody){
+        const [update] = await db.update(showtimes).set({ ...data }).where(eq(showtimes.id, id)).returning()
+        if(!update){ throw new AppError(404, "Showtime not found") }
+
+        return update
     }
 }
