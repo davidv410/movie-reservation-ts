@@ -42,4 +42,11 @@ export class ShowtimesService{
 
         return update
     }
+
+    async removeShowtime(id: string){
+        const [remove] = await db.delete(showtimes).where(eq(showtimes.id, id)).returning()
+        if(!remove){ throw new AppError(404, "Movie not found") }
+
+        return remove
+    }
 }

@@ -9,7 +9,7 @@ export const findShowtimes = async (req: Request, res: Response, next: NextFunct
     try{
         const response = await showtimesService.findShowtimes()
 
-        res.status(200).json({ response })
+        res.status(200).json({ showtimes: response })
     }catch(err){
         next(err)
     }
@@ -36,7 +36,7 @@ export const createShowtime = async (req: Request, res: Response, next: NextFunc
 
         const response = await showtimesService.createShowtimes(parsed.data)
 
-        res.status(200).json({ response })
+        res.status(200).json({ created: response })
     }catch(err){
         next(err)
     }
@@ -62,11 +62,13 @@ export const updateShowtime = async (req: Request, res: Response, next: NextFunc
     }
 }
 
-export const deleteShowtime = async (req: Request, res: Response, next: NextFunction) => {
+export const removeShowtime = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        // const response = await
+        const parsedParams = paramsSchema.safeParse(req.params)
+        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
+        const response = await showtimesService.removeShowtime(parsedParams.data.id)
 
-        // res.status(200).json({ response })
+        res.status(200).json({ removed: response })
     }catch(err){
         next(err)
     }
