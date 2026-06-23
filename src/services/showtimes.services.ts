@@ -42,7 +42,7 @@ export class ShowtimesService{
                     (and(lt(showtimes.startsAt, data.endsAt), gt(showtimes.endsAt, data.startsAt))
                   )
                  )
-                )
+                ).for("update")
                 
             if(checkShowtime.length > 0){
                 throw new AppError(400, `${data.hall} is not available at that specific time.`)
