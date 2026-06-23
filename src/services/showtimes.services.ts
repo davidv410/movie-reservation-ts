@@ -1,6 +1,6 @@
 import { and, eq, lt, gt, or, gte, lte } from "drizzle-orm";
 import { db } from "../db/db.js";
-import { showtimes } from "../db/schema.js";
+import { seats, showtimes } from "../db/schema.js";
 import type { createShowtimeBody, updateShowtimeBody } from "../validation/schemas.js";
 import { AppError } from "../types.js";
 
@@ -33,21 +33,56 @@ export class ShowtimesService{
     }
 
     async createShowtimes(data: createShowtimeBody){
-        const checkShowtime = await db.select().from(showtimes)
-        .where(
-            and
-                (eq(showtimes.hall, data.hall),
-                or 
-                (and(lt(showtimes.startsAt, data.endsAt), gt(showtimes.endsAt, data.startsAt))
-              )
-             )
-            )
-        if(checkShowtime.length > 0){
-            throw new AppError(400, `${data.hall} is not available at that specific time.`)
-        }
+        const transaction = await db.transaction(async (tx) => {
+            const checkShowtime = await tx.select().from(showtimes)
+            .where(
+                and
+                    (eq(showtimes.hall, data.hall),
+                    or 
+                    (and(lt(showtimes.startsAt, data.endsAt), gt(showtimes.endsAt, data.startsAt))
+                  )
+                 )
+                )
+                
+            if(checkShowtime.length > 0){
+                throw new AppError(400, `${data.hall} is not available at that specific time.`)
+            }
+    
+            const [showtime] = await tx.insert(showtimes).values({ ...data }).returning()
+    
+            const rows: string[] = ["A", "B", "C", "D", "E"]
+    
+            const seatsPerRow: number = 20
+            const totalSeatsShowtime: number = showtime!.totalSeats
+    
+            let count: number = 0;
+    
+            const rowCount: number = Math.ceil(totalSeatsShowtime / seatsPerRow)
+            if (rowCount > rows.length) { throw new AppError(500, "Not enough rows") }
+    
+            const finalSeats = []
+    
+            for(let i = 0; i < rowCount; i++){
+              const row = rows[i]!
+              for(let seatNum = 1; seatNum <= seatsPerRow; seatNum++){ 
+                if(count >= totalSeatsShowtime) break;
+    
+                finalSeats.push({            
+                showtimeId: showtime!.id,
+                row,
+                number: seatNum,
+                price: "10.00", })
+    
+                count++;
+              }
+            }
+    
+            await tx.insert(seats).values(finalSeats)
+            return { showtime }
+        })
+ 
+        return { showtime: transaction.showtime, seats: "created" }
 
-        const [createShowtime] = await db.insert(showtimes).values({ ...data }).returning()
-        return createShowtime
     }
 
     async updateShowtime(id: string, data: updateShowtimeBody){
