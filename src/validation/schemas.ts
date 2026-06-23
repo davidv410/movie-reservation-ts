@@ -41,9 +41,15 @@ export const querySchema = z.object({
   date: z.string().date("Invalid date format").optional()
 });
 
+export const createReservationSchema = z.object({
+  showtimeId: z.uuid(),
+  seatId: z.uuid(),
+});
+
 export type registerSchemaBody = z.infer<typeof registerSchema>
 export type loginSchemaBody = z.infer<typeof loginSchema>
 export type createMovieBody = z.infer<typeof createMovieSchema>
 export type updateMovieBody = z.infer<typeof updateMovieSchema>
 export type createShowtimeBody = z.infer<typeof createShowtimeSchema>
 export type updateShowtimeBody = z.infer<typeof updateShowtimeSchema>
+export type createReservationBody = z.infer<typeof createReservationSchema>
