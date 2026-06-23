@@ -1,13 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
 import { ReservationsService } from "../../services/reservations.service.js";
-import { createReservationSchema } from "../../validation/schemas.js";
+import { createReservationSchema, paramsSchema } from "../../validation/schemas.js";
 import { AppError } from "../../types.js";
 
 const reservationsService = new ReservationsService()
 
 export const getReservations = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        const response = await reservationsService.getReservations()
+        const response = await reservationsService.getReservations(req.user!.id)
 
         res.status(200).json({ reservations: response })
     }catch(err){
@@ -17,9 +17,12 @@ export const getReservations = async (req: Request, res: Response, next: NextFun
 
 export const getReservation = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        const response = await reservationsService.getReservation()
+        const parsedParams = paramsSchema.safeParse(req.params)
+        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
 
-        res.status(200).json({ reservations: response })
+        const response = await reservationsService.getReservation(req.user!.id, parsedParams.data.id)
+
+        res.status(200).json({ reservation: response })
     }catch(err){
         next(err)
     }
@@ -32,27 +35,21 @@ export const createReservation = async (req: Request, res: Response, next: NextF
 
         const response = await reservationsService.createReservation(req.user!.id, parsed.data)
 
-        res.status(200).json({ response })
+        res.status(201).json({ response })
     }catch(err){
         next(err)
     }
 }
 
-export const updateReservation = async (req: Request, res: Response, next: NextFunction) => {
-    try{
-        const response = await reservationsService.updateReservation()
-
-        res.status(200).json({ reservations: response })
-    }catch(err){
-        next(err)
-    }
-}
 
 export const removeReservation = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        const response = await reservationsService.removeReservation()
+        const parsedParams = paramsSchema.safeParse(req.params)
+        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
 
-        res.status(200).json({ reservations: response })
+        const response = await reservationsService.removeReservation(req.user!.id, parsedParams.data.id)
+
+        res.status(200).json({ cancelled: response })
     }catch(err){
         next(err)
     }
