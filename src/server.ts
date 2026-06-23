@@ -9,6 +9,7 @@ import refresh from './routes/auth/refresh.js';
 
 import { moviesRouter } from './routes/movies/movies.routes.js';
 import { showtimesRouter } from './routes/showtimes/showtimes.routes.js';
+import { reservationsRouter } from './routes/reservations/reservations.routes.js';
 
 const app = express()
 
@@ -21,6 +22,7 @@ app.use('/logout', logout)
 app.use('/refresh', refresh)
 app.use('/movies', moviesRouter)
 app.use('/showtimes', showtimesRouter)
+app.use('/reservations', reservationsRouter)
 
 app.use(errorHandler);
 
