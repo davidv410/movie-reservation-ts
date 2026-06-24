@@ -24,7 +24,7 @@ export const updateMovieSchema = createMovieSchema.partial().extend({
 });
 
 export const paramsSchema = z.object({
-  id: z.uuid("Invalid movie id")
+  id: z.uuid("Invalid id")
 });
 
 export const createShowtimeSchema = z.object({
