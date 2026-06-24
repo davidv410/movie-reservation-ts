@@ -1,10 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
+import { AdminService } from "../../services/admin.service.js";
+
+const adminService = new AdminService()
 
 export const getReservations = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        const response = await 
+        const response = await adminService.getReservations()
 
-        res.status(200).json()
+        res.status(200).json({allReservations: response})
     }catch(err){
         next(err)
     }
