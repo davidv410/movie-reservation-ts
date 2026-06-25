@@ -18,7 +18,7 @@ export const getReservations = async (req: Request, res: Response, next: NextFun
 export const getShowtimeReservations = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const parsedParams = paramsSchema.safeParse(req.params)
-        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
+        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid request params') }
         const response = await adminService.getShowtimeReservations(parsedParams.data.id)
 
         res.status(200).json(response)
@@ -30,7 +30,7 @@ export const getShowtimeReservations = async (req: Request, res: Response, next:
 export const getShowtimeReport = async (req: Request, res: Response, next: NextFunction) => {
     try{
         const parsedParams = paramsSchema.safeParse(req.params)
-        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
+        if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid request params') }
         const response = await adminService.getShowtimeReport(parsedParams.data.id)
 
         res.status(200).json(response)

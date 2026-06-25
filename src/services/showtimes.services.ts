@@ -64,7 +64,7 @@ export class ShowtimesService{
     
             for(let i = 0; i < rowCount; i++){
               const row = rows[i]!
-              for(let seatNum = 1; seatNum <= seatsPerRow; seatNum++){ 
+              for(let seatNum = 1; seatNum <= seatsPerRow; seatNum++){
                 if(count >= totalSeatsShowtime) break;
     
                 finalSeats.push({            
