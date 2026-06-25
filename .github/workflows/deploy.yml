@@ -17,6 +17,8 @@ jobs:
       - run: npm test
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET }}
 
   build:
     needs: test
