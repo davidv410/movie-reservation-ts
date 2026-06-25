@@ -43,7 +43,7 @@ export class AuthService {
 
     async refreshUser(refreshToken: string){
         if(!refreshToken){
-            throw new AppError(400, "No refresh token")
+            throw new AppError(404, "No refresh token")
         }
 
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }

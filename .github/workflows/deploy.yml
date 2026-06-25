@@ -6,9 +6,21 @@ on:
       - main
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
 
+  build:
+    needs: test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

@@ -12,7 +12,7 @@ export const signup = async (req:Request, res:Response, next:NextFunction) => {
             throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body')
         }
         await authService.createUser(parsed.data)
-        res.status(200).json({ message: "User created" })
+        res.status(201).json({ message: "User created" })
     }catch(err){
         next(err)
     }
