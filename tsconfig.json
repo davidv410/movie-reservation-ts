@@ -42,6 +42,7 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
 
-    "exclude": ["vitest.config.ts", "drizzle.config.ts", "node_modules"]
-  }
+
+  },
+  "exclude": ["vitest.config.ts", "drizzle.config.ts", "node_modules"]
 }
