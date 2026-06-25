@@ -41,5 +41,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+
+    "exclude": ["vitest.config.ts", "drizzle.config.ts", "node_modules"]
   }
 }
