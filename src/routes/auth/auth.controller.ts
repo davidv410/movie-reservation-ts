@@ -41,7 +41,14 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
             maxAge: 7 * 24 * 60 * 60 * 1000  //7d
         })
 
-        res.status(200).json({ message: "User logged in." })
+        res.status(200).json({
+            message: "User logged in.",
+            user: {
+                id: response.id,
+                name: response.name,
+                email: response.email,
+            }
+        })
     }catch(err){
         next(err)
     }
@@ -79,4 +86,8 @@ export const refresh = async (req:Request, res:Response, next:NextFunction) =>{
     }catch(err){
         next(err)
     }
+}
+
+export const me = async (req:Request, res:Response, next:NextFunction) => {
+    res.json({ user: req.user })
 }
