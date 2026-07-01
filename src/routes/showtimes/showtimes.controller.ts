@@ -9,7 +9,7 @@ export const findShowtimes = async (req: Request, res: Response, next: NextFunct
     try{
         const parseQuery = querySchema.safeParse(req.query)
         if(!parseQuery.success){ throw new AppError(400, parseQuery.error.issues[0]?.message ?? 'Invalid query') }
-        const response = parseQuery ? await showtimesService.findShowtimes(parseQuery.data.date) : await showtimesService.findShowtimes()
+        const response = parseQuery ? await showtimesService.findShowtimes(parseQuery.data.date, parseQuery.data.movieId) : await showtimesService.findShowtimes()
 
         res.status(200).json({ showtimes: response })
     }catch(err){

@@ -12,7 +12,7 @@ export const findSeats = async (req: Request, res: Response, next: NextFunction)
 
         const response = await seatsService.findSeats(parsed.data.id)
 
-        res.status(200).json({ showtimeSeats: response })
+        res.status(200).json({ seats: response })
     }catch(err){
         next(err)
     }

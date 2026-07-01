@@ -5,22 +5,23 @@ import type { createShowtimeBody, updateShowtimeBody } from "../validation/schem
 import { AppError } from "../types.js";
 
 export class ShowtimesService{
-    async findShowtimes(date?: string){
+    async findShowtimes(date?: string, movieId?: string){
+        const conditions = []
+
         if(date){
         const start = new Date(date);
         start.setHours(0, 0, 0, 0);
-
         const end = new Date(date);
         end.setHours(23, 59, 59, 999);
-
-        return await db.select().from(showtimes).where(
-        and(
-            gte(showtimes.startsAt, start),
-            lte(showtimes.startsAt, end)
-            )
-        )
-
+        conditions.push(gte(showtimes.startsAt, start))
+        conditions.push(lte(showtimes.startsAt, end))
         }
+
+        if(movieId){
+            conditions.push(eq(showtimes.movieId, movieId))
+        }
+
+        if (conditions.length) return await db.select().from(showtimes).where(and(...conditions))
 
         return await db.select().from(showtimes)
     }

@@ -38,7 +38,8 @@ export const createShowtimeSchema = z.object({
 export const updateShowtimeSchema = createShowtimeSchema.partial()
 
 export const querySchema = z.object({
-  date: z.string().date("Invalid date format").optional()
+  date: z.string().date("Invalid date format").optional(),
+  movieId: z.uuid().optional(),
 });
 
 export const createReservationSchema = z.object({
