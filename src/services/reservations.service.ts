@@ -6,7 +6,7 @@ import { AppError } from "../types.js";
 
 export class ReservationsService {
     async getReservations(userId: number){
-        const list = await db.select().from(reservations).where(eq(reservations.userId, userId))
+        const list = await db.select().from(reservations).leftJoin(seats, eq(reservations.seatId, seats.id)).where(eq(reservations.userId, userId))
         return list
     }
 
@@ -29,7 +29,7 @@ export class ReservationsService {
                 ...data,
                 pricePaid: seat.price
             }).returning()
-    
+
             return { reservation }
         })
 

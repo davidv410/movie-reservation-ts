@@ -1,6 +1,6 @@
 import { and, eq, lt, gt, or, gte, lte } from "drizzle-orm";
 import { db } from "../db/db.js";
-import { seats, showtimes } from "../db/schema.js";
+import {reservations, seats, showtimes, movies} from "../db/schema.js";
 import type { createShowtimeBody, updateShowtimeBody } from "../validation/schemas.js";
 import { AppError } from "../types.js";
 
@@ -21,9 +21,9 @@ export class ShowtimesService{
             conditions.push(eq(showtimes.movieId, movieId))
         }
 
-        if (conditions.length) return await db.select().from(showtimes).where(and(...conditions))
+        if (conditions.length) return await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id)).where(and(...conditions))
 
-        return await db.select().from(showtimes)
+        return await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id))
     }
 
     async findShowtime(id: string){
