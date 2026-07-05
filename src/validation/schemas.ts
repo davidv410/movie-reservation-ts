@@ -12,11 +12,11 @@ export const loginSchema = z.object({
 })
 
 export const createMovieSchema = z.object({
-  title: z.string().min(1, "Title is required").max(255),
-  description: z.string().optional(),
-  posterUrl: z.string().url("Invalid URL").optional(),
-  durationMinutes: z.number().int().positive("Duration must be a positive number"),
-  genreIds: z.array(z.uuid()).min(1, "At least one genre is required")
+    title: z.string().min(1, "Title is required").max(255),
+    description: z.string().optional(),
+    posterUrl: z.string().url("Invalid URL").optional(),
+    durationMinutes: z.number().int().positive("Duration must be a positive number"),
+    genreIds: z.array(z.uuid()).min(1, "At least one genre is required")
 });
 
 export const updateMovieSchema = createMovieSchema.partial().extend({

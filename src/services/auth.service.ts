@@ -49,6 +49,7 @@ export class AuthService {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }
 
         const [user] = await db.select().from(users).where(eq(users.id, decoded.id))
+
         if(!user || user.refreshToken !== refreshToken){ throw new AppError(400, "Bad refresh token") }
 
         const generateAccessToken = accessToken(user.id, user.role, user.email)
