@@ -38,6 +38,7 @@ export const createShowtime = async (req: Request, res: Response, next: NextFunc
 
         res.status(200).json({ created: response })
     }catch(err){
+        console.log(err)
         next(err)
     }
 }

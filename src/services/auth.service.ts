@@ -34,7 +34,7 @@ export class AuthService {
 
         await db.update(users).set({ refreshToken: generateRefreshToken }).where(eq(users.id, user.id))
 
-        return { generateAccessToken, generateRefreshToken, id: user.id, name: user.name, email: user.email }
+        return { generateAccessToken, generateRefreshToken, id: user.id, name: user.name, email: user.email, role: user.role }
     }
 
     async logoutUser(id: number){

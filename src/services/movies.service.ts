@@ -15,7 +15,6 @@ export class MovieService{
 
     async createMovie(data: createMovieBody){
         const { genreIds, ...movieData } = data
-        console.log(genreIds)
 
         const [movie] = await db.insert(movies).values({ ...movieData }).returning()
         if(!movie){ throw new AppError(400, "Failed to create movie") }

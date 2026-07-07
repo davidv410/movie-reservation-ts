@@ -47,6 +47,7 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
                 id: response.id,
                 name: response.name,
                 email: response.email,
+                role: response.role
             }
         })
     }catch(err){
