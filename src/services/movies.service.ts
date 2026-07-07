@@ -8,9 +8,16 @@ export class MovieService{
     async findMovies(){ return await db.select().from(movies) }
 
     async findMovie(id: string){
-        const [movie] = await db.select().from(movies).where(eq(movies.id, id))
+        const movie = await db.select().from(movies).where(eq(movies.id, id)).leftJoin(movieGenres, eq(movies.id, movieGenres.movieId))
+
         if(!movie){ throw new AppError(404, "Movie not found") }
-        return movie
+
+        return {
+            ...movie[0]!.movies,
+            genreIds: movie
+                .filter(m => m.movie_genres)
+                .map(m => m.movie_genres!.genreId)
+        }
     }
 
     async createMovie(data: createMovieBody){
@@ -28,10 +35,26 @@ export class MovieService{
     }
 
     async updateMovie(movieId: string, data: updateMovieBody){
-        const [update] = await db.update(movies).set({ ...data }).where(eq(movies.id, movieId)).returning()
-        if(!update){ throw new AppError(404, "Movie not found") }
+        const { genreIds, ...movieData } = data
 
-        return update
+        return await db.transaction(async (tx) => {
+            if(genreIds){
+                await tx.delete(movieGenres).where(eq(movieGenres.movieId, movieId))
+
+                if(genreIds.length > 0){
+                    const genreInsert = genreIds.map(genre => ({
+                        movieId: movieId,
+                        genreId: genre,
+                    }))
+
+                    await tx.insert(movieGenres).values(genreInsert);
+                }
+            }
+            const [updateMovie] =  await tx.update(movies).set(movieData).where(eq(movies.id, movieId)).returning()
+            if(!updateMovie){ throw new AppError(404, "Movie not found") }
+
+            return updateMovie
+        })
     }
 
     async removeMovie(movieId: string){
