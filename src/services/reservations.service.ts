@@ -5,7 +5,12 @@ import { eq, and } from "drizzle-orm";
 import { AppError } from "../types.js";
 
 export class ReservationsService {
-    async getReservations(userId: number){
+    async getReservations(userId: number, role?: string){
+        if(role && role === 'admin'){
+            const list = await db.select().from(reservations).leftJoin(seats, eq(reservations.seatId, seats.id))
+            return list
+        }
+
         const list = await db.select().from(reservations).leftJoin(seats, eq(reservations.seatId, seats.id)).where(eq(reservations.userId, userId))
         return list
     }

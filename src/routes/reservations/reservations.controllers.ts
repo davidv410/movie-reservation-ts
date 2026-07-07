@@ -7,7 +7,7 @@ const reservationsService = new ReservationsService()
 
 export const getReservations = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        const response = await reservationsService.getReservations(req.user!.id)
+        const response = await reservationsService.getReservations(req.user!.id, req.user!.role)
 
         res.status(200).json({ reservations: response })
     }catch(err){
