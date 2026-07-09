@@ -15,7 +15,7 @@ export class AuthService {
 
         const hash = await bcrypt.hash(data.password, 10)
 
-        return db.insert(users).values({ name: data.name, email: data.email, password: hash }).returning()
+        return db.insert(users).values({ name: data.name, email: data.email, password: hash })
     }
 
     async loginUser(data: loginSchemaBody){

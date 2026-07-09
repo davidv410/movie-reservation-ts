@@ -19,7 +19,7 @@ export class AdminService{
 
         const movieShowtimes = await db.select().from(showtimes).where(eq(showtimes.movieId, movieId))
 
-        if (movieShowtimes.length === 0) throw new AppError(404, "No showtimes found for this movie");
+        if (movieShowtimes.length === 0) return [];
 
          const report = await Promise.all( movieShowtimes.map(async (showtime) => {
             const movieReservations = await db.select().from(reservations).where(and(eq(reservations.showtimeId, showtime.id), eq(reservations.status, "confirmed")))
