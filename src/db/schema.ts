@@ -46,9 +46,7 @@ export const genres = pgTable("genres", {
   slug: varchar("slug", { length: 100 }).notNull().unique(),
 });
  
-export const movies = pgTable(
-  "movies",
-  {
+export const movies = pgTable("movies", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
@@ -64,57 +62,41 @@ export const movies = pgTable(
   })
 );
  
-export const movieGenres = pgTable(
-  "movie_genres",
-  {
-    movieId: uuid("movie_id")
-      .notNull()
-      .references(() => movies.id, { onDelete: "cascade" }),
-    genreId: uuid("genre_id")
-      .notNull()
-      .references(() => genres.id, { onDelete: "cascade" }),
+export const movieGenres = pgTable("movie_genres", {
+    movieId: uuid("movie_id").notNull().references(() => movies.id, { onDelete: "cascade" }),
+    genreId: uuid("genre_id").notNull().references(() => genres.id, { onDelete: "cascade" }),
   },
   (t) => ({
     pk: uniqueIndex("movie_genres_pk").on(t.movieId, t.genreId),
   })
 );
  
-export const showtimes = pgTable(
-  "showtimes",
-  {
+export const showtimes = pgTable("showtimes", {
     id: uuid("id").primaryKey().defaultRandom(),
-    movieId: uuid("movie_id")
-      .notNull()
-      .references(() => movies.id, { onDelete: "cascade" }),
+    movieId: uuid("movie_id").notNull().references(() => movies.id, { onDelete: "cascade" }),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
-    hall: varchar("hall", { length: 50 }).notNull(), // e.g. "Hall A", "Screen 3"
+    hall: varchar("hall", { length: 50 }).notNull(),
     totalSeats: integer("total_seats").notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
     movieIdx: index("showtimes_movie_idx").on(t.movieId),
     startsAtIdx: index("showtimes_starts_at_idx").on(t.startsAt),
-    // Useful for the "browse by date" query
     movieDateIdx: index("showtimes_movie_date_idx").on(t.movieId, t.startsAt),
   })
 );
  
-export const seats = pgTable(
-  "seats",
-  {
+export const seats = pgTable("seats", {
     id: uuid("id").primaryKey().defaultRandom(),
-    showtimeId: uuid("showtime_id")
-      .notNull()
-      .references(() => showtimes.id, { onDelete: "cascade" }),
-    row: varchar("row", { length: 5 }).notNull(),   // e.g. "A", "B", "C"
-    number: integer("number").notNull(),             // e.g. 1, 2, 3
+    showtimeId: uuid("showtime_id").notNull().references(() => showtimes.id, { onDelete: "cascade" }),
+    row: varchar("row", { length: 5 }).notNull(),
+    number: integer("number").notNull(),
     type: seatTypeEnum("type").notNull().default("standard"),
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     isAvailable: boolean("is_available").notNull().default(true),
   },
   (t) => ({
-    // Enforce unique seat position per showtime
     uniqueSeat: uniqueIndex("seats_showtime_row_number_idx").on(
       t.showtimeId,
       t.row,
@@ -125,27 +107,17 @@ export const seats = pgTable(
   })
 );
  
-export const reservations = pgTable(
-  "reservations",
-  {
+export const reservations = pgTable("reservations", {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    showtimeId: uuid("showtime_id")
-      .notNull()
-      .references(() => showtimes.id, { onDelete: "cascade" }),
-    seatId: uuid("seat_id")
-      .notNull()
-      .references(() => seats.id, { onDelete: "cascade" }),
+    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    showtimeId: uuid("showtime_id").notNull().references(() => showtimes.id, { onDelete: "cascade" }),
+    seatId: uuid("seat_id").notNull().references(() => seats.id, { onDelete: "cascade" }),
     status: reservationStatusEnum("status").notNull().default("confirmed"),
-    // Snapshot the price at time of booking — don't rely on seats.price later
     pricePaid: decimal("price_paid", { precision: 10, scale: 2 }).notNull(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     cancelledAt: timestamp("cancelled_at"),
   },
   (t) => ({
-    // One reservation per seat per showtime (prevents double-booking)
     uniqueBooking: uniqueIndex("reservations_seat_unique_idx").on(
       t.seatId,
       t.showtimeId
@@ -155,38 +127,3 @@ export const reservations = pgTable(
     statusIdx: index("reservations_status_idx").on(t.status),
   })
 );
- 
-export const usersRelations = relations(users, ({ many }) => ({
-  reservations: many(reservations),
-}));
- 
-export const genresRelations = relations(genres, ({ many }) => ({
-  movieGenres: many(movieGenres),
-}));
- 
-export const moviesRelations = relations(movies, ({ many }) => ({
-  movieGenres: many(movieGenres),
-  showtimes: many(showtimes),
-}));
- 
-export const movieGenresRelations = relations(movieGenres, ({ one }) => ({
-  movie: one(movies, { fields: [movieGenres.movieId], references: [movies.id] }),
-  genre: one(genres, { fields: [movieGenres.genreId], references: [genres.id] }),
-}));
- 
-export const showtimesRelations = relations(showtimes, ({ one, many }) => ({
-  movie: one(movies, { fields: [showtimes.movieId], references: [movies.id] }),
-  seats: many(seats),
-  reservations: many(reservations),
-}));
- 
-export const seatsRelations = relations(seats, ({ one, many }) => ({
-  showtime: one(showtimes, { fields: [seats.showtimeId], references: [showtimes.id] }),
-  reservations: many(reservations),
-}));
- 
-export const reservationsRelations = relations(reservations, ({ one }) => ({
-  user: one(users, { fields: [reservations.userId], references: [users.id] }),
-  showtime: one(showtimes, { fields: [reservations.showtimeId], references: [showtimes.id] }),
-  seat: one(seats, { fields: [reservations.seatId], references: [seats.id] }),
-}));
