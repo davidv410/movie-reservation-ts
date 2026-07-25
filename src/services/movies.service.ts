@@ -2,22 +2,31 @@ import type { createMovieBody, updateMovieBody } from "../validation/schemas.js"
 import { db } from "../db/db.js";
 import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
-import { eq, inArray } from "drizzle-orm";
+import {asc, eq, inArray} from "drizzle-orm";
 
 export class MovieService{
-    async findMovies(){ return await db.select().from(movies) }
+    async findMovies(query: any){
+        const page = parseInt(query.page) || 1;
+        const limit = parseInt(query.limit) || 5;
+        const offset = (page - 1) * limit;
+
+        const rows = await db.select().from(movies)
+        const list = await db.select().from(movies).orderBy(asc(movies.title)).limit(limit).offset(offset)
+
+        const pageArr: number[] = []
+        const pages = Math.ceil(rows.length / limit)
+
+        for (let i = 1; i <= pages; i++){ pageArr.push(i) }
+
+        return { list, pageArr }
+    }
 
     async findMovie(id: string){
         const movie = await db.select().from(movies).where(eq(movies.id, id)).leftJoin(movieGenres, eq(movies.id, movieGenres.movieId))
 
         if(!movie){ throw new AppError(404, "Movie not found") }
 
-        return {
-            ...movie[0]!.movies,
-            genreIds: movie
-                .filter(m => m.movie_genres)
-                .map(m => m.movie_genres!.genreId)
-        }
+        return {...movie[0]!.movies, genreIds: movie.filter(m => m.movie_genres).map(m => m.movie_genres!.genreId)}
     }
 
     async createMovie(data: createMovieBody){

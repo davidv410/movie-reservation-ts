@@ -7,9 +7,9 @@ const movieService = new MovieService()
 
 export const findMovies = async (req: Request, res: Response, next: NextFunction) => {
     try{
-        const response = await movieService.findMovies()
+        const response = await movieService.findMovies(req.query)
 
-        res.status(200).json({movies: response})
+        res.status(200).json({ movies: response.list, pages: response.pageArr })
     }catch(err){
         next(err)
     }
