@@ -2,27 +2,41 @@ import type { createMovieBody, updateMovieBody } from "../validation/schemas.js"
 import { db } from "../db/db.js";
 import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
-import {asc, eq, inArray} from "drizzle-orm";
+import {asc, eq, ilike, inArray} from "drizzle-orm";
 
 export class MovieService{
     async findMovies(query: any){
         const page = parseInt(query.page) || 1;
         const limit = parseInt(query.limit) || 5;
         const offset = (page - 1) * limit;
+        const search = query.search
 
         const rows = await db.select().from(movies)
-        const list = await db.select().from(movies).orderBy(asc(movies.title)).limit(limit).offset(offset)
+        const list = await db.select()
+            .from(movies)
+            .where(search && ilike(movies.title, `%${search}%`))
+            .orderBy(asc(movies.title))
+            .limit(limit)
+            .offset(offset)
 
         const pageArr: number[] = []
-        const pages = Math.ceil(rows.length / limit)
 
-        for (let i = 1; i <= pages; i++){ pageArr.push(i) }
+        if(search){
+            const pages = Math.ceil(list.length / limit)
+            for (let i = 1; i <= pages; i++){ pageArr.push(i) }
+        }else{
+            const pages = Math.ceil(rows.length / limit)
+            for (let i = 1; i <= pages; i++){ pageArr.push(i) }
+        }
 
         return { list, pageArr }
     }
 
     async findMovie(id: string){
-        const movie = await db.select().from(movies).where(eq(movies.id, id)).leftJoin(movieGenres, eq(movies.id, movieGenres.movieId))
+        const movie = await db.select()
+            .from(movies)
+            .where(eq(movies.id, id))
+            .leftJoin(movieGenres, eq(movies.id, movieGenres.movieId))
 
         if(!movie){ throw new AppError(404, "Movie not found") }
 
@@ -38,7 +52,9 @@ export class MovieService{
         const findGenre = await db.select().from(genres).where(inArray(genres.id, genreIds))
         if (findGenre.length !== genreIds.length) { throw new AppError(404, "One or more genres not found"); }
 
-        const [genre] = await db.insert(movieGenres).values( genreIds.map((genreId) => ({ movieId: movie.id, genreId })) ).returning()
+        const [genre] = await db.insert(movieGenres)
+            .values( genreIds.map((genreId) => ({ movieId: movie.id, genreId })) )
+            .returning()
 
         return { movie, genre}
     }
