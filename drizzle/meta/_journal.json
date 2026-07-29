@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1781964048011,
-      "tag": "0000_fair_alice",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1782044366734,
-      "tag": "0001_abnormal_ken_ellis",
+      "when": 1785156791672,
+      "tag": "0000_wealthy_forge",
       "breakpoints": true
     }
   ]

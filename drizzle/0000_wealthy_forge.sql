@@ -1,4 +1,5 @@
 CREATE TYPE "public"."reservation_status" AS ENUM('confirmed', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."roles" AS ENUM('admin', 'user');--> statement-breakpoint
 CREATE TYPE "public"."seat_type" AS ENUM('standard', 'premium', 'accessible');--> statement-breakpoint
 CREATE TABLE "genres" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE "movies" (
 --> statement-breakpoint
 CREATE TABLE "reservations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" uuid NOT NULL,
+	"user_id" integer NOT NULL,
 	"showtime_id" uuid NOT NULL,
 	"seat_id" uuid NOT NULL,
 	"status" "reservation_status" DEFAULT 'confirmed' NOT NULL,
@@ -53,6 +54,17 @@ CREATE TABLE "showtimes" (
 	"hall" varchar(50) NOT NULL,
 	"total_seats" integer NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "users" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" varchar(255) NOT NULL,
+	"email" varchar(255) NOT NULL,
+	"password" varchar(255) NOT NULL,
+	"role" "roles" DEFAULT 'user' NOT NULL,
+	"created_at" timestamp DEFAULT now(),
+	"refresh_token" varchar(500),
+	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_movie_id_movies_id_fk" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

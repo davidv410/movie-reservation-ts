@@ -2,7 +2,8 @@ import type { createMovieBody, updateMovieBody } from "../validation/schemas.js"
 import { db } from "../db/db.js";
 import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
-import {asc, eq, ilike, inArray} from "drizzle-orm";
+import {asc, eq, ilike, inArray, and, sql} from "drizzle-orm";
+
 
 export class MovieService{
     async findMovies(query: any){
@@ -10,24 +11,50 @@ export class MovieService{
         const limit = parseInt(query.limit) || 5;
         const offset = (page - 1) * limit;
         const search = query.search
+        let genres = query.genre
 
-        const rows = await db.select().from(movies)
-        const list = await db.select()
-            .from(movies)
-            .where(search && ilike(movies.title, `%${search}%`))
-            .orderBy(asc(movies.title))
-            .limit(limit)
-            .offset(offset)
-
-        const pageArr: number[] = []
-
-        if(search){
-            const pages = Math.ceil(list.length / limit)
-            for (let i = 1; i <= pages; i++){ pageArr.push(i) }
-        }else{
-            const pages = Math.ceil(rows.length / limit)
-            for (let i = 1; i <= pages; i++){ pageArr.push(i) }
+        if (!genres) {
+            genres = [];
+        } else if (!Array.isArray(genres)) {
+            genres = [genres]
         }
+
+        let list
+        let count
+
+        if(genres.length > 0){
+            list = await db.select({ title: movies.title, description: movies.description })
+                .from(movies)
+                .where(search && ilike(movies.title, `%${search}%`))
+                .innerJoin(movieGenres, and(eq(movies.id, movieGenres.movieId), inArray(movieGenres.genreId, genres)))
+                .orderBy(asc(movies.title))
+                .limit(limit)
+                .offset(offset)
+
+            const countResult = await db.select({ count: sql<number>`count(distinct ${movies.id})::int` })
+                .from(movies)
+                .where(search && ilike(movies.title, `%${search}%`))
+                .innerJoin(movieGenres, and(eq(movies.id, movieGenres.movieId), inArray(movieGenres.genreId, genres)))
+
+            count = countResult[0]!.count
+        }else{
+            list = await db.select()
+                .from(movies)
+                .where(search && ilike(movies.title, `%${search}%`))
+                .orderBy(asc(movies.title))
+                .limit(limit)
+                .offset(offset)
+
+            const countResult = await db.select({ count: sql<number>`count(*)::int` })
+                .from(movies)
+                .where(search && ilike(movies.title, `%${search}%`))
+
+            count = countResult[0]!.count
+        }
+
+        const pages = Math.ceil(count / limit)
+        const pageArr: number[] = []
+        for (let i = 1; i <= pages; i++){ pageArr.push(i) }
 
         return { list, pageArr }
     }
