@@ -31,12 +31,12 @@ export class MovieService{
                 .limit(limit)
                 .offset(offset)
 
-            const countResult = await db.select({ count: sql<number>`count(distinct ${movies.id})::int` })
+            const [countResult] = await db.select({ count: sql<number>`count(distinct ${movies.id})::int` })
                 .from(movies)
                 .where(search && ilike(movies.title, `%${search}%`))
                 .innerJoin(movieGenres, and(eq(movies.id, movieGenres.movieId), inArray(movieGenres.genreId, genres)))
 
-            count = countResult[0]!.count
+            count = countResult!.count
         }else{
             list = await db.select()
                 .from(movies)
@@ -45,11 +45,11 @@ export class MovieService{
                 .limit(limit)
                 .offset(offset)
 
-            const countResult = await db.select({ count: sql<number>`count(*)::int` })
+            const [countResult] = await db.select({ count: sql<number>`count(*)::int` })
                 .from(movies)
                 .where(search && ilike(movies.title, `%${search}%`))
 
-            count = countResult[0]!.count
+            count = countResult!.count
         }
 
         const pages = Math.ceil(count / limit)
