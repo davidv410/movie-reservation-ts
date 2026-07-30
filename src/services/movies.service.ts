@@ -3,6 +3,7 @@ import { db } from "../db/db.js";
 import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
 import {asc, eq, ilike, inArray, and, sql} from "drizzle-orm";
+import { redis } from "../lib/redis.js";
 
 
 export class MovieService{
@@ -13,11 +14,19 @@ export class MovieService{
         const search = query.search
         let genres = query.genre
 
+        
         if (!genres) {
             genres = [];
         } else if (!Array.isArray(genres)) {
             genres = [genres]
         }
+        
+        const sortedGenres = genres.sort().join(',')
+        const key = `movies:page=${page}:limit=${limit}:search=${search ?? ''}:genres=${sortedGenres}`
+
+        const cached = await redis.get(key)
+
+        if(cached) return cached
 
         let list
         let count
@@ -56,16 +65,26 @@ export class MovieService{
         const pageArr: number[] = []
         for (let i = 1; i <= pages; i++){ pageArr.push(i) }
 
-        return { list, pageArr }
+        const result = { list, pageArr }
+        await redis.set(key, JSON.stringify(result), { ex: 60 * 60 })
+
+        return result
     }
 
     async findMovie(id: string){
+        const key = `movie:${id}`
+
+        const cached = await redis.get(key)
+        if(cached){ return cached }
+        
         const movie = await db.select()
             .from(movies)
             .where(eq(movies.id, id))
             .leftJoin(movieGenres, eq(movies.id, movieGenres.movieId))
 
         if(!movie){ throw new AppError(404, "Movie not found") }
+
+        await redis.set(key, JSON.stringify(movie), { ex: 60 * 60 })
 
         return {...movie[0]!.movies, genreIds: movie.filter(m => m.movie_genres).map(m => m.movie_genres!.genreId)}
     }
