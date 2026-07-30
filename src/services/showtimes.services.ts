@@ -3,9 +3,15 @@ import { db } from "../db/db.js";
 import {reservations, seats, showtimes, movies} from "../db/schema.js";
 import type { createShowtimeBody, updateShowtimeBody } from "../validation/schemas.js";
 import { AppError } from "../types.js";
+import { redis } from "../lib/redis.js";
 
 export class ShowtimesService{
     async findShowtimes(date?: string, movieId?: string){
+        const key = "showtimes"
+
+        const cached = await redis.get(key)
+        if(cached) { return cached }
+
         const conditions = []
 
         if(date){
@@ -23,11 +29,23 @@ export class ShowtimesService{
 
         if (conditions.length) return await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id)).where(and(...conditions))
 
-        return await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id))
+        const result = await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id))
+
+        await redis.set(key, JSON.stringify(result),  { ex: 60 * 60 })
+
+        return result
     }
 
     async findShowtime(id: string){
+        const key = `showtime:${id}`
+
+        const cached = redis.get(key)
+        if(cached) { return cached }
+
         const [showtime] = await db.select().from(showtimes).where(eq(showtimes.id, id))
+
+        await redis.set(key, JSON.stringify(showtime), { ex: 60 * 60 })
+
         if(!showtime){ throw new AppError(404, "Showtime not found") }
 
         return showtime
