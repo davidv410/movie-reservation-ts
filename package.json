@@ -18,6 +18,7 @@
   "description": "",
   "dependencies": {
     "@types/express": "^5.0.6",
+    "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
