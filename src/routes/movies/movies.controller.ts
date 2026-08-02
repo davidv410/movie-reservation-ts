@@ -9,7 +9,17 @@ export const findMovies = async (req: Request, res: Response, next: NextFunction
     try{
         const response = await movieService.findMovies(req.query)
 
-        res.status(200).json({ movies: response.list, pages: response.pageArr })
+        res.status(200).json({ movies: response.list , pages: response.pageArr })
+    }catch(err){
+        next(err)
+    }
+}
+
+export const movieSelect = async (req: Request, res: Response, next: NextFunction) => {
+    try{
+        const response = await movieService.findMovieSelect()
+
+        res.status(200).json({ movies: response })
     }catch(err){
         next(err)
     }

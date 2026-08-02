@@ -5,9 +5,14 @@ import { AppError } from "../types.js";
 import {asc, eq, ilike, inArray, and, sql} from "drizzle-orm";
 import { redis } from "../lib/redis.js";
 
+type MoviesResult = {
+    list: any[]
+    pageArr: number[]
+}
+
 
 export class MovieService{
-    async findMovies(query: any){
+    async findMovies(query: any): Promise<MoviesResult>{
         const page = parseInt(query.page) || 1;
         const limit = parseInt(query.limit) || 5;
         const offset = (page - 1) * limit;
@@ -24,7 +29,7 @@ export class MovieService{
         const sortedGenres = genres.sort().join(',')
         const key = `movies:page=${page}:limit=${limit}:search=${search ?? ''}:genres=${sortedGenres}`
 
-        const cached = await redis.get(key)
+        const cached = await redis.get<MoviesResult>(key)
 
         if(cached) return cached
 
@@ -69,6 +74,10 @@ export class MovieService{
         await redis.set(key, JSON.stringify(result), { ex: 60 * 60 })
 
         return result
+    }
+
+    async findMovieSelect(){
+        return await db.select({ id: movies.id, title: movies.title }).from(movies)
     }
 
     async findMovie(id: string){
