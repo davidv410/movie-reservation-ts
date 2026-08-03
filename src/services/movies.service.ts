@@ -95,7 +95,7 @@ export class MovieService{
 
         await redis.set(key, JSON.stringify(movie), { ex: 60 * 60 })
 
-        return {...movie[0]!.movies, genreIds: movie.filter(m => m.movie_genres).map(m => m.movie_genres!.genreId)}
+        return movie
     }
 
     async createMovie(data: createMovieBody){

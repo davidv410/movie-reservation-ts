@@ -32,7 +32,7 @@ export const findMovie = async (req: Request, res: Response, next: NextFunction)
 
         const response = await movieService.findMovie(parsed.data.id)
 
-        res.status(200).json({movie: response})
+        res.status(200).json(response)
     }catch(err){
         next(err)
     }
