@@ -99,13 +99,10 @@ export class ShowtimesService{
             }
     
             await tx.insert(seats).values(finalSeats)
-
             return { showtime }
         })
-        await redis.del('showtimes')
-        
+        await redis.del(`showtime`)
         return { showtime: transaction.showtime, seats: "created" }
-
     }
 
     async updateShowtime(id: string, data: updateShowtimeBody){
@@ -113,7 +110,7 @@ export class ShowtimesService{
         if(!update){ throw new AppError(404, "Showtime not found") }
 
         await redis.del(`showtime:${id}`)
-        await redis.del('showtimes')
+        await redis.del(`showtime`)
 
         return update
     }
@@ -123,7 +120,7 @@ export class ShowtimesService{
         if(!remove){ throw new AppError(404, "Movie not found") }
 
         await redis.del(`showtime:${id}`)
-        await redis.del('showtimes')
+        await redis.del(`showtime`)
 
         return remove
     }
