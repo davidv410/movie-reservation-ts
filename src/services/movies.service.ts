@@ -71,7 +71,7 @@ export class MovieService{
         for (let i = 1; i <= pages; i++){ pageArr.push(i) }
 
         const result = { list, pageArr }
-        await redis.set(key, JSON.stringify(result), { ex: 60 * 60 })
+        await redis.set(key, JSON.stringify(result), { ex: 30 })
 
         return result
     }
@@ -117,7 +117,7 @@ export class MovieService{
     async updateMovie(movieId: string, data: updateMovieBody){
         const { genreIds, ...movieData } = data
 
-        return await db.transaction(async (tx) => {
+        const updateMovie = await db.transaction(async (tx) => {
             if(genreIds){
                 await tx.delete(movieGenres).where(eq(movieGenres.movieId, movieId))
 
@@ -135,11 +135,17 @@ export class MovieService{
 
             return updateMovie
         })
+
+        await redis.del(`movie:${movieId}`)
+
+        return updateMovie
     }
 
     async removeMovie(movieId: string){
         const [remove] = await db.delete(movies).where(eq(movies.id, movieId)).returning()
         if(!remove){ throw new AppError(404, "Movie not found") }
+
+        await redis.del(`movie:${movieId}`)
 
         return remove
     }

@@ -9,8 +9,10 @@ export class ShowtimesService{
     async findShowtimes(date?: string, movieId?: string){
         const key = "showtimes"
 
-        const cached = await redis.get(key)
-        if(cached) { return cached }
+        if(!date && !movieId){
+            const cached = await redis.get(key)
+            if(cached) { return cached }
+        }
 
         const conditions = []
 
@@ -39,7 +41,7 @@ export class ShowtimesService{
     async findShowtime(id: string){
         const key = `showtime:${id}`
 
-        const cached = redis.get(key)
+        const cached = await redis.get(key)
         if(cached) { return cached }
 
         const [showtime] = await db.select().from(showtimes).where(eq(showtimes.id, id))
@@ -97,9 +99,11 @@ export class ShowtimesService{
             }
     
             await tx.insert(seats).values(finalSeats)
+
             return { showtime }
         })
- 
+        await redis.del('showtimes')
+        
         return { showtime: transaction.showtime, seats: "created" }
 
     }
@@ -108,12 +112,18 @@ export class ShowtimesService{
         const [update] = await db.update(showtimes).set({ ...data }).where(eq(showtimes.id, id)).returning()
         if(!update){ throw new AppError(404, "Showtime not found") }
 
+        await redis.del(`showtime:${id}`)
+        await redis.del('showtimes')
+
         return update
     }
 
     async removeShowtime(id: string){
         const [remove] = await db.delete(showtimes).where(eq(showtimes.id, id)).returning()
         if(!remove){ throw new AppError(404, "Movie not found") }
+
+        await redis.del(`showtime:${id}`)
+        await redis.del('showtimes')
 
         return remove
     }
