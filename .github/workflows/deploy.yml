@@ -16,9 +16,11 @@ jobs:
       - run: npm install
       - run: npm test
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_TEST }}
+          DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
           ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
           REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          REDIS_TOKEN: ${{ secrets.REDIS_TOKEN }}
 
   build:
     needs: test
