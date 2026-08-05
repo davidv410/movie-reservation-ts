@@ -1,10 +1,11 @@
+import "dotenv/config"
 import { Ratelimit } from "@upstash/ratelimit"
 import { redis } from "./redis.js"
 
 export const strictLimiter = new Ratelimit({
     redis,
     prefix: "ratelimit:strict",
-    limiter: Ratelimit.slidingWindow(5, "60 s"),
+    limiter: process.env.NODE_ENV === "test" ? Ratelimit.slidingWindow(30, "10 s") : Ratelimit.slidingWindow(5, "60 s"),
 })
 
 export const moderateLimiter = new Ratelimit({

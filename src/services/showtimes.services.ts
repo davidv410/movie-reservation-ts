@@ -117,7 +117,7 @@ export class ShowtimesService{
 
     async removeShowtime(id: string){
         const [remove] = await db.delete(showtimes).where(eq(showtimes.id, id)).returning()
-        if(!remove){ throw new AppError(404, "Movie not found") }
+        if(!remove){ throw new AppError(404, "Showtime not found") }
 
         await redis.del(`showtime:${id}`)
         await redis.del(`showtime`)

@@ -55,12 +55,13 @@ describe("POST /auth/login", () => {
             email: "john@test.com",
             password: "password123",
         });
+        console.log(res.status)
         expect(res.status).toBe(200);
         expect(res.body.message).toBe("User logged in.");
     });
 
     it("should reject wrong password", async () => {
-        await request(app).post("/auth/login").send({
+        await request(app).post("/auth/register").send({
             name: "John",
             email: "john@test.com",
             password: "password123",
