@@ -4,6 +4,9 @@ import { protect } from '../../middleware/protect.js'
 import { isAdmin } from '../../middleware/isAdmin.js'
 import { rateLimiter } from '../../middleware/rateLimiter.js'
 import { lenientLimiter } from '../../lib/rateLimit.js'
+import multer from "multer";
+
+const upload = multer();
 
 export const moviesRouter = Router()
 
@@ -11,5 +14,5 @@ moviesRouter.get('/', rateLimiter(lenientLimiter), findMovies)
 moviesRouter.get('/movieSelect', movieSelect)
 moviesRouter.get('/:id', findMovie)
 moviesRouter.post('/', protect, isAdmin, createMovie)
-moviesRouter.patch('/:id', protect, isAdmin, updateMovie)
+moviesRouter.patch('/:id', protect, isAdmin, upload.single("posterUrl"), updateMovie)
 moviesRouter.delete('/:id', protect, isAdmin, removeMovie)

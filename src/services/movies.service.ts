@@ -1,4 +1,4 @@
-import type { createMovieBody, updateMovieBody } from "../validation/schemas.js";
+import type { createMovieBody, fileSchemaBody, updateMovieBody } from "../validation/schemas.js";
 import { db } from "../db/db.js";
 import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
@@ -114,29 +114,30 @@ export class MovieService{
         return { movie, genre}
     }
 
-    async updateMovie(movieId: string, data: updateMovieBody){
-        const { genreIds, ...movieData } = data
+    async updateMovie(id: string, body: updateMovieBody, file?: fileSchemaBody){
+        const { genreIds, ...movieData } = body
+        console.log(id, genreIds, movieData, file)
 
         const updateMovie = await db.transaction(async (tx) => {
             if(genreIds){
-                await tx.delete(movieGenres).where(eq(movieGenres.movieId, movieId))
+                await tx.delete(movieGenres).where(eq(movieGenres.movieId, id))
 
                 if(genreIds.length > 0){
                     const genreInsert = genreIds.map(genre => ({
-                        movieId: movieId,
+                        movieId: id,
                         genreId: genre,
                     }))
 
                     await tx.insert(movieGenres).values(genreInsert);
                 }
             }
-            const [updateMovie] =  await tx.update(movies).set(movieData).where(eq(movies.id, movieId)).returning()
+            const [updateMovie] =  await tx.update(movies).set(movieData).where(eq(movies.id, id)).returning()
             if(!updateMovie){ throw new AppError(404, "Movie not found") }
 
             return updateMovie
         })
 
-        await redis.del(`movie:${movieId}`)
+        await redis.del(`movie:${id}`)
 
         return updateMovie
     }
