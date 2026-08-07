@@ -4,6 +4,8 @@ import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
 import {asc, eq, ilike, inArray, and, sql} from "drizzle-orm";
 import { redis } from "../lib/redis.js";
+import { uuid } from "zod";
+import { getUrl, saveFile } from "../storage/r2.storage.js";
 
 type MoviesResult = {
     list: any[]
@@ -116,7 +118,16 @@ export class MovieService{
 
     async updateMovie(id: string, body: updateMovieBody, file?: fileSchemaBody){
         const { genreIds, ...movieData } = body
-        console.log(id, genreIds, movieData, file)
+
+        let url: string
+        if(file){
+            const ext = file.mimetype.split('/')[1]
+            const generateName = crypto.randomUUID()
+            const fileName = `${generateName}.${ext}`
+
+            await saveFile(file.buffer, fileName, file.mimetype)
+            url = getUrl(fileName)
+        }
 
         const updateMovie = await db.transaction(async (tx) => {
             if(genreIds){
@@ -131,7 +142,7 @@ export class MovieService{
                     await tx.insert(movieGenres).values(genreInsert);
                 }
             }
-            const [updateMovie] =  await tx.update(movies).set(movieData).where(eq(movies.id, id)).returning()
+            const [updateMovie] =  await tx.update(movies).set({...movieData, ...(url && {posterUrl: url})}).where(eq(movies.id, id)).returning()
             if(!updateMovie){ throw new AppError(404, "Movie not found") }
 
             return updateMovie
