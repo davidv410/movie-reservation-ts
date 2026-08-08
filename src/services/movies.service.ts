@@ -5,7 +5,7 @@ import { AppError } from "../types.js";
 import {asc, eq, ilike, inArray, and, sql} from "drizzle-orm";
 import { redis } from "../lib/redis.js";
 import { uuid } from "zod";
-import { getUrl, saveFile } from "../storage/r2.storage.js";
+import { getUrl, saveFile, deleteFile } from "../storage/r2.storage.js";
 
 type MoviesResult = {
     list: any[]
@@ -119,7 +119,7 @@ export class MovieService{
     async updateMovie(id: string, body: updateMovieBody, file?: fileSchemaBody){
         const { genreIds, ...movieData } = body
 
-        let url: string
+        let url: string | undefined
         if(file){
             const ext = file.mimetype.split('/')[1]
             const generateName = crypto.randomUUID()
@@ -129,7 +129,10 @@ export class MovieService{
             url = getUrl(fileName)
         }
 
-        const updateMovie = await db.transaction(async (tx) => {
+        const updateTransaction = await db.transaction(async (tx) => {
+            const [movie] = await tx.select().from(movies).where(eq(movies.id, id))
+            if(!movie){ throw new AppError(404, "Movie not found") }
+
             if(genreIds){
                 await tx.delete(movieGenres).where(eq(movieGenres.movieId, id))
 
@@ -142,15 +145,20 @@ export class MovieService{
                     await tx.insert(movieGenres).values(genreInsert);
                 }
             }
-            const [updateMovie] =  await tx.update(movies).set({...movieData, ...(url && {posterUrl: url})}).where(eq(movies.id, id)).returning()
-            if(!updateMovie){ throw new AppError(404, "Movie not found") }
 
-            return updateMovie
+            const [update] =  await tx.update(movies).set({...movieData, ...(url && {posterUrl: url})}).where(eq(movies.id, id)).returning()
+            
+            return { update, oldPoster: movie.posterUrl}
         })
+        
+        if(url && updateTransaction.oldPoster){
+            const oldFile = new URL(updateTransaction.oldPoster)
+            await deleteFile(oldFile.pathname.slice(1))
+        }
 
         await redis.del(`movie:${id}`)
 
-        return updateMovie
+        return updateTransaction
     }
 
     async removeMovie(movieId: string){

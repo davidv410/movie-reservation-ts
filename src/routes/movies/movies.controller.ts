@@ -67,7 +67,7 @@ export const updateMovie = async (req: Request, res: Response, next: NextFunctio
 
         const response = await movieService.updateMovie(parsedParams.data.id, parsedBody.data, parsedFile?.data)
 
-        res.status(200).json({ update: response })
+        res.status(200).json({ update: response.update })
     }catch(err){
         next(err)
     }
