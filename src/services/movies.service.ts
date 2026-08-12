@@ -39,7 +39,7 @@ export class MovieService{
         let count
 
         if(genres.length > 0){
-            list = await db.select({ title: movies.title, description: movies.description, durationMinutes: movies.durationMinutes, posterUrl: movies.posterUrl })
+            list = await db.select({ id: movies.id, title: movies.title, description: movies.description, durationMinutes: movies.durationMinutes, posterUrl: movies.posterUrl })
                 .from(movies)
                 .where(search && ilike(movies.title, `%${search}%`))
                 .innerJoin(movieGenres, and(eq(movies.id, movieGenres.movieId), inArray(movieGenres.genreId, genres)))
