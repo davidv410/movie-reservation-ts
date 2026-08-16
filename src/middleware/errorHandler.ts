@@ -10,4 +10,7 @@ export const errorHandler = (err: unknown, req: Request, res: Response, next: Ne
         console.log(err)
         return res.status(500).json({ message: 'Server error' })
     }
+
+    console.log('unexpected throw', err)
+    return res.status(500).json({ message: 'Server error' })
 }
