@@ -83,6 +83,13 @@ export const refresh = async (req:Request, res:Response, next:NextFunction) =>{
             maxAge: 60 * 60 * 1000  //1h
         })
 
+        res.cookie('refreshToken', response.generateRefreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            maxAge: 7 * 24 * 60 * 60 * 1000  //7d
+        })
+
         return res.status(200).json({ message: "Token refreshed!" })
     }catch(err){
         next(err)

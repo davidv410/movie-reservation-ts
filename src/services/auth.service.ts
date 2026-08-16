@@ -41,19 +41,22 @@ export class AuthService {
         await db.update(users).set({ refreshToken: null }).where(eq(users.id, id))
     }
 
-    async refreshUser(refreshToken: string){
-        if(!refreshToken){
+    async refreshUser(token: string){
+        if(!token){
             throw new AppError(401, "No refresh token")
         }
 
-        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }
 
         const [user] = await db.select().from(users).where(eq(users.id, decoded.id))
 
-        if(!user || user.refreshToken !== refreshToken){ throw new AppError(401, "Bad refresh token") }
+        if(!user || user.refreshToken !== token){ throw new AppError(401, "Bad refresh token") }
 
+        const generateRefreshToken = refreshToken(user.id, user.role, user.email)
         const generateAccessToken = accessToken(user.id, user.role, user.email)
 
-        return { generateAccessToken }
+        await db.update(users).set({ refreshToken: generateRefreshToken }).where(eq(users.id, decoded.id))
+
+        return { generateAccessToken, generateRefreshToken }
     }
 }
