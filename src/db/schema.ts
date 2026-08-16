@@ -10,9 +10,9 @@ import {
   pgEnum,
   index,
   uniqueIndex,
-  serial
+  serial,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 
 export const rolesEnum = pgEnum('roles', ["admin", "user"])
@@ -121,7 +121,7 @@ export const reservations = pgTable("reservations", {
     uniqueBooking: uniqueIndex("reservations_seat_unique_idx").on(
       t.seatId,
       t.showtimeId
-    ),
+    ).where(sql`${t.status} = 'confirmed`),
     userIdx: index("reservations_user_idx").on(t.userId),
     showtimeIdx: index("reservations_showtime_idx").on(t.showtimeId),
     statusIdx: index("reservations_status_idx").on(t.status),

@@ -8,6 +8,13 @@
       "when": 1785156791672,
       "tag": "0000_wealthy_forge",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786913775633,
+      "tag": "0001_goofy_robin_chapel",
+      "breakpoints": true
     }
   ]
 }
