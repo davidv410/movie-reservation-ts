@@ -121,7 +121,7 @@ export const reservations = pgTable("reservations", {
     uniqueBooking: uniqueIndex("reservations_seat_unique_idx").on(
       t.seatId,
       t.showtimeId
-    ).where(sql`${t.status} = 'confirmed`),
+    ).where(sql`${t.status} = 'confirmed'`),
     userIdx: index("reservations_user_idx").on(t.userId),
     showtimeIdx: index("reservations_showtime_idx").on(t.showtimeId),
     statusIdx: index("reservations_status_idx").on(t.status),

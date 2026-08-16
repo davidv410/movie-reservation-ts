@@ -15,6 +15,13 @@
       "when": 1786913775633,
       "tag": "0001_goofy_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786914178923,
+      "tag": "0002_huge_madrox",
+      "breakpoints": true
     }
   ]
 }
