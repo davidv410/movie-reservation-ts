@@ -21,12 +21,12 @@ export class AuthService {
     async loginUser(data: loginSchemaBody){
         const [user] = await db.select().from(users).where(eq(users.email, data.email))
         if(!user){
-            throw new AppError(404, "Wrong credentials")
+            throw new AppError(401, "Wrong credentials")
         }
 
         const match = await bcrypt.compare(data.password, user.password)
         if(!match){
-            throw new AppError(404, "Wrong credentials")
+            throw new AppError(401, "Wrong credentials")
         }
 
         const generateAccessToken = accessToken(user.id, user.role, user.email)
@@ -43,14 +43,14 @@ export class AuthService {
 
     async refreshUser(refreshToken: string){
         if(!refreshToken){
-            throw new AppError(404, "No refresh token")
+            throw new AppError(401, "No refresh token")
         }
 
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }
 
         const [user] = await db.select().from(users).where(eq(users.id, decoded.id))
 
-        if(!user || user.refreshToken !== refreshToken){ throw new AppError(400, "Bad refresh token") }
+        if(!user || user.refreshToken !== refreshToken){ throw new AppError(401, "Bad refresh token") }
 
         const generateAccessToken = accessToken(user.id, user.role, user.email)
 
