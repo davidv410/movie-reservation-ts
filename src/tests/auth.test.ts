@@ -71,7 +71,7 @@ describe("POST /auth/login", () => {
             email: "john@test.com",
             password: "wrongpassword",
         });
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(401);
     });
 
     it("should reject non existent user", async () => {
@@ -79,6 +79,6 @@ describe("POST /auth/login", () => {
             email: "nobody@test.com",
             password: "password123",
         });
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(401);
     });
 });
