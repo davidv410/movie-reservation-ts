@@ -1,4 +1,4 @@
-# Movie Reservation — API
+# Movie Reservation - API
 
 TypeScript/Express backend for a movie reservation system. Movies, showtimes, seat maps, reservations. Frontend repo: [movie-reservation-frontend](https://github.com/davidv410/movie-reservation-frontend).
 
@@ -115,6 +115,6 @@ There's more I want to add:
 - Right now booking is instant confirm/reject — want to add a temporary hold (like 5-10 min) while someone's checking out
 - Stripe for actual payments
 - Background jobs for stuff like confirmation emails
-- More tests, especially around the concurrency stuff — I've tested auth but not the double-booking scenario directly, which is the whole point of this project
+- More tests, I've tested auth but not the double-booking scenario directly, which is the whole point of this project
 - API docs
 - Better logging, right now it's just console.log
