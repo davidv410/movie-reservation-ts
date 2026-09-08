@@ -31,7 +31,7 @@ const transaction = await db.transaction(async (tx) => {
 - Admin vs user roles, checked with middleware on protected routes
 - Movies + genres CRUD, poster images uploaded to Cloudflare R2
 - Showtimes CRUD (movie, hall, time)
-- Seat maps per showtime — row, number, type, price
+- Seat maps per showtime: row, number, type, price
 - Book / view / cancel reservations, cancelling frees the seat back up
 - Basic admin reports (all reservations, per-showtime, etc.)
 - Rate limiting with Upstash Redis
@@ -67,7 +67,7 @@ showtime belongs to a movie. seats belong to a showtime, unique per (showtimeId,
 
 ## Running it locally
 
-You'll need Node 18+, a Postgres db, an Upstash Redis instance, and a Cloudflare R2 bucket for uploads.
+You'll need Node, a Postgres db, an Upstash Redis instance, and a Cloudflare R2 bucket for uploads.
 
 ```bash
 git clone https://github.com/davidv410/movie-reservation-ts.git
@@ -112,7 +112,7 @@ Tests: `npm test` (uses `TEST_DATABASE_URL`). Same thing runs in CI before it bu
 
 There's more I want to add:
 
-- Right now booking is instant confirm/reject — want to add a temporary hold (like 5-10 min) while someone's checking out
+- Right now booking is instant confirm/reject, want to add a temporary hold (like 5-10 min) while someone's checking out
 - Stripe for actual payments
 - Background jobs for stuff like confirmation emails
 - More tests, I've tested auth but not the double-booking scenario directly, which is the whole point of this project
