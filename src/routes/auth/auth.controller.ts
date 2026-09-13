@@ -29,29 +29,21 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
 
         const response = await authService.loginUser(parsed.data)
 
-        res.cookie('token', response.generateAccessToken, {
+        res.cookie('token', response.accessToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
             maxAge: 60 * 60 * 1000  //1h
         })
 
-        res.cookie('refreshToken', response.generateRefreshToken, {
+        res.cookie('refreshToken', response.refreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
             maxAge: 7 * 24 * 60 * 60 * 1000  //7d
         })
 
-        res.status(200).json({
-            message: "User logged in.",
-            user: {
-                id: response.id,
-                name: response.name,
-                email: response.email,
-                role: response.role
-            }
-        })
+        res.status(200).json('User logged in')
     }catch(err){
         next(err)
     }
