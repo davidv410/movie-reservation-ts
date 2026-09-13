@@ -1,5 +1,5 @@
 import { db } from '../db/db.js'
-import { users } from '../db/schema.js'
+import { refreshTokens, users } from '../db/schema.js'
 import { eq } from 'drizzle-orm'
 import type { loginSchemaBody, registerSchemaBody } from '../validation/schemas.js'
 import bcrypt from 'bcrypt'
@@ -10,12 +10,15 @@ import jwt from 'jsonwebtoken'
 
 export class AuthService {
     async createUser(data: registerSchemaBody){
-        const userExist = await db.select().from(users).where(eq(users.email, data.email)).limit(1)
-        if(userExist.length > 0){ throw new AppError(400, "User exists") }
+        const [userExists] = await db.select().from(users).where(eq(users.email, data.email))
+        if(userExists){
+            throw new AppError(400, "User already exists")
+        }
 
-        const hash = await bcrypt.hash(data.password, 10)
+        const passwordHash = await bcrypt.hash(data.password, 10)
 
-        return db.insert(users).values({ name: data.name, email: data.email, password: hash })
+        await db.insert(users).values({ ...data, password: passwordHash })
+        return { message: "User created" }
     }
 
     async loginUser(data: loginSchemaBody){
@@ -37,8 +40,8 @@ export class AuthService {
         return { generateAccessToken, generateRefreshToken, id: user.id, name: user.name, email: user.email, role: user.role }
     }
 
-    async logoutUser(id: number){
-        await db.update(users).set({ refreshToken: null }).where(eq(users.id, id))
+    async logoutUser(id: string){
+        await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.userId, id))
     }
 
     async refreshUser(token: string){
@@ -46,7 +49,7 @@ export class AuthService {
             throw new AppError(401, "No refresh token")
         }
 
-        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as { id: number; role: string; email: string }
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as { id: string; role: string; email: string }
 
         const [user] = await db.select().from(users).where(eq(users.id, decoded.id))
 
