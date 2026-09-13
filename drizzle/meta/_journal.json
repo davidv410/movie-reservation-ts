@@ -5,22 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1785156791672,
-      "tag": "0000_wealthy_forge",
+      "when": 1789295336760,
+      "tag": "0000_jazzy_white_tiger",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1786913775633,
-      "tag": "0001_goofy_robin_chapel",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1786914178923,
-      "tag": "0002_huge_madrox",
+      "when": 1789295545318,
+      "tag": "0001_stale_rockslide",
       "breakpoints": true
     }
   ]

@@ -30,14 +30,25 @@ export const seatTypeEnum = pgEnum("seat_type", [
 
 
 export const users = pgTable('users', {
-    id: serial('id').primaryKey(),
+    id: uuid('id').primaryKey().defaultRandom(),
     name: varchar('name', { length: 255 }).notNull(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     password: varchar('password', { length: 255 }).notNull(),
     role: rolesEnum('role').notNull().default("user"),
-    createdAt: timestamp('created_at').defaultNow(),
-    refreshToken: varchar('refresh_token', { length: 500 })
+    createdAt: timestamp('created_at').defaultNow()
 })
+
+export const refreshTokens = pgTable('refresh_tokens', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tokenHash: varchar('token_hash', { length: 255 }).notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+}, (t) => ({
+    tokenIndex: uniqueIndex("token_index").on(t.tokenHash),
+    userTokenIndex: index("user_token_index").on(t.userId)
+}))
 
  
 export const genres = pgTable("genres", {

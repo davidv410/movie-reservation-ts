@@ -25,6 +25,15 @@ CREATE TABLE "movies" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "refresh_tokens" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"token_hash" varchar(255) NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"revoked_at" timestamp with time zone,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"user_id" uuid NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "reservations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" integer NOT NULL,
@@ -57,7 +66,7 @@ CREATE TABLE "showtimes" (
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
 	"password" varchar(255) NOT NULL,
@@ -69,6 +78,7 @@ CREATE TABLE "users" (
 --> statement-breakpoint
 ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_movie_id_movies_id_fk" FOREIGN KEY ("movie_id") REFERENCES "public"."movies"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "movie_genres" ADD CONSTRAINT "movie_genres_genre_id_genres_id_fk" FOREIGN KEY ("genre_id") REFERENCES "public"."genres"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reservations" ADD CONSTRAINT "reservations_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reservations" ADD CONSTRAINT "reservations_showtime_id_showtimes_id_fk" FOREIGN KEY ("showtime_id") REFERENCES "public"."showtimes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "reservations" ADD CONSTRAINT "reservations_seat_id_seats_id_fk" FOREIGN KEY ("seat_id") REFERENCES "public"."seats"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -77,7 +87,9 @@ ALTER TABLE "showtimes" ADD CONSTRAINT "showtimes_movie_id_movies_id_fk" FOREIGN
 CREATE UNIQUE INDEX "movie_genres_pk" ON "movie_genres" USING btree ("movie_id","genre_id");--> statement-breakpoint
 CREATE INDEX "movies_title_idx" ON "movies" USING btree ("title");--> statement-breakpoint
 CREATE INDEX "movies_active_idx" ON "movies" USING btree ("is_active");--> statement-breakpoint
-CREATE UNIQUE INDEX "reservations_seat_unique_idx" ON "reservations" USING btree ("seat_id","showtime_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "token_index" ON "refresh_tokens" USING btree ("token_hash");--> statement-breakpoint
+CREATE INDEX "user_token_index" ON "refresh_tokens" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "reservations_seat_unique_idx" ON "reservations" USING btree ("seat_id","showtime_id") WHERE "reservations"."status" = 'confirmed';--> statement-breakpoint
 CREATE INDEX "reservations_user_idx" ON "reservations" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "reservations_showtime_idx" ON "reservations" USING btree ("showtime_id");--> statement-breakpoint
 CREATE INDEX "reservations_status_idx" ON "reservations" USING btree ("status");--> statement-breakpoint

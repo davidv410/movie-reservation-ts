@@ -1,2 +1,0 @@
-DROP INDEX "reservations_seat_unique_idx";--> statement-breakpoint
-CREATE UNIQUE INDEX "reservations_seat_unique_idx" ON "reservations" USING btree ("seat_id","showtime_id") WHERE "reservations"."status" = 'confirmed';
