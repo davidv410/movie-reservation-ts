@@ -1,6 +1,6 @@
 import { db } from '../db/db.js'
 import { refreshTokens, users } from '../db/schema.js'
-import { eq } from 'drizzle-orm'
+import { eq, and, isNull } from 'drizzle-orm'
 import type { loginSchemaBody, registerSchemaBody } from '../validation/schemas.js'
 import bcrypt from 'bcrypt'
 import { AppError } from '../types.js'
@@ -55,17 +55,49 @@ export class AuthService {
             throw new AppError(401, "No refresh token")
         }
 
-        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as { id: string; role: string; email: string }
+        let decoded: { id: string; role: string; email: string }
+        try{
+            decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET!) as { id: string; role: string; email: string }
+        }catch(err){
+            throw new AppError(401, "Refresh token not valid")
+        }
+
+        const tokenHash = generateHash(token)
 
         const [user] = await db.select().from(users).where(eq(users.id, decoded.id))
 
-        if(!user || user.refreshToken !== token){ throw new AppError(401, "Bad refresh token") }
+        const [hashMatch] = await db.select()
+        .from(refreshTokens)
+        .where(eq(refreshTokens.tokenHash, tokenHash))
 
-        const generateRefreshToken = refreshToken(user.id, user.role, user.email)
-        const generateAccessToken = accessToken(user.id, user.role, user.email)
+        if(!hashMatch || hashMatch.expiresAt < new Date()){
+            throw new AppError(401, "Refresh token not valid")
+        }
 
-        await db.update(users).set({ refreshToken: generateRefreshToken }).where(eq(users.id, decoded.id))
+        if(hashMatch.revokedAt){
+            await db.update(refreshTokens)
+            .set({ revokedAt: new Date() })
+            .where(and(eq(refreshTokens.userId, decoded.id), isNull(refreshTokens.revokedAt)))
 
-        return { generateAccessToken, generateRefreshToken }
+            throw new AppError(401, "Refresh token reuse, please log in again")
+        }
+
+        const accessToken = generateAccessToken(decoded.id, decoded.role, decoded.role)
+        const refreshToken = generateRefreshToken(decoded.id, decoded.role, decoded.role)
+        const newTokenHash = generateHash(refreshToken)
+        
+        const newRefreshDecoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { exp: number }
+        const expiresAt = new Date(newRefreshDecoded.exp * 1000)
+        
+        await db.transaction(async (tx) => {
+            await tx.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, hashMatch.id))
+            await tx.insert(refreshTokens).values({
+                tokenHash: newTokenHash,
+                expiresAt,
+                userId: decoded.id
+            })
+        })
+
+        return { accessToken, refreshToken }
     }
 }

@@ -70,14 +70,14 @@ export const refresh = async (req:Request, res:Response, next:NextFunction) =>{
     try{
         const response = await authService.refreshUser(req.cookies.refreshToken)
 
-        res.cookie('token', response.generateAccessToken, {
+        res.cookie('token', response.accessToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
             maxAge: 60 * 60 * 1000  //1h
         })
 
-        res.cookie('refreshToken', response.generateRefreshToken, {
+        res.cookie('refreshToken', response.refreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
