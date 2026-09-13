@@ -5,13 +5,15 @@ import { AppError } from "../../types.js";
 
 const authService = new AuthService()
 
-export const signup = async (req:Request, res:Response, next:NextFunction) => {
+export const register = async (req:Request, res:Response, next:NextFunction) => {
     try{
         const parsed = registerSchema.safeParse(req.body)
         if(!parsed.success){
             throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid requst body')
         }
+
         await authService.createUser(parsed.data)
+        
         res.status(201).json({ message: "User created" })
     }catch(err){
         next(err)
