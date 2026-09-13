@@ -120,7 +120,7 @@ export const seats = pgTable("seats", {
  
 export const reservations = pgTable("reservations", {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     showtimeId: uuid("showtime_id").notNull().references(() => showtimes.id, { onDelete: "cascade" }),
     seatId: uuid("seat_id").notNull().references(() => seats.id, { onDelete: "cascade" }),
     status: reservationStatusEnum("status").notNull().default("confirmed"),

@@ -15,6 +15,27 @@
       "when": 1789295545318,
       "tag": "0001_stale_rockslide",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789313479152,
+      "tag": "0002_stormy_the_initiative",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789313637361,
+      "tag": "0003_supreme_orphan",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789313655867,
+      "tag": "0004_unique_apocalypse",
+      "breakpoints": true
     }
   ]
 }
