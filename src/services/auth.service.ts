@@ -4,8 +4,9 @@ import { eq } from 'drizzle-orm'
 import type { loginSchemaBody, registerSchemaBody } from '../validation/schemas.js'
 import bcrypt from 'bcrypt'
 import { AppError } from '../types.js'
-import { accessToken, refreshToken } from '../utils/generateToken.js'
+import { generateAccessToken, generateRefreshToken } from '../utils/generateToken.js'
 import jwt from 'jsonwebtoken'
+import { generateHash } from '../utils/generateHash.js'
 
 
 export class AuthService {
@@ -23,21 +24,26 @@ export class AuthService {
 
     async loginUser(data: loginSchemaBody){
         const [user] = await db.select().from(users).where(eq(users.email, data.email))
-        if(!user){
-            throw new AppError(401, "Wrong credentials")
-        }
+        if(!user){ throw new AppError(401, "Wrong credentials") }
 
         const match = await bcrypt.compare(data.password, user.password)
-        if(!match){
-            throw new AppError(401, "Wrong credentials")
-        }
+        if(!match){ throw new AppError(401, "Wrong credentials") }
 
-        const generateAccessToken = accessToken(user.id, user.role, user.email)
-        const generateRefreshToken = refreshToken(user.id, user.role, user.email)
+        const accessToken = generateAccessToken(user.id, user.role, user.email)
+        const refreshToken = generateRefreshToken(user.id, user.role, user.email)
 
-        await db.update(users).set({ refreshToken: generateRefreshToken }).where(eq(users.id, user.id))
+        const tokenHash = generateHash(refreshToken)
 
-        return { generateAccessToken, generateRefreshToken, id: user.id, name: user.name, email: user.email, role: user.role }
+        const decoded = jwt.decode(refreshToken) as { exp: number }
+        const expiresAt = new Date(decoded.exp * 1000)
+
+        await db.insert(refreshTokens).values({
+            tokenHash,
+            expiresAt,
+            userId: user.id
+        })
+
+        return { accessToken, refreshToken }
     }
 
     async logoutUser(id: string){
