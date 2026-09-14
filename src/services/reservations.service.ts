@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { AppError } from "../types.js";
 
 export class ReservationsService {
-    async getReservations(userId: number, role?: string){
+    async getReservations(userId: string, role?: string){
         if(role && role === 'admin'){
             const list = await db.select().from(reservations).leftJoin(seats, eq(reservations.seatId, seats.id))
             return list
@@ -15,13 +15,13 @@ export class ReservationsService {
         return list
     }
 
-    async getReservation(userId: number, reservationId: string){
+    async getReservation(userId: string, reservationId: string){
         const [reservation] = await db.select().from(reservations).where(and(eq(reservations.userId, userId), eq(reservations.id, reservationId)))
         if(!reservation){ throw new AppError(404, "No reservation found") }
         return reservation
     }
 
-    async createReservation(userId: number, data: createReservationBody){
+    async createReservation(userId: string, data: createReservationBody){
         const transaction = await db.transaction(async(tx) => {
             const [seat] = await tx.select().from(seats).where(eq(seats.id, data.seatId)).for("update")
             if(!seat){ throw new AppError(404, "Seat not found") }
@@ -42,7 +42,7 @@ export class ReservationsService {
     }
 
 
-     async removeReservation(userId: number, reservationId: string){
+     async removeReservation(userId: string, reservationId: string){
         const [reservation] = await db.select().from(reservations)
         .where(and(eq(reservations.id, reservationId), eq(reservations.userId, userId)));
 
