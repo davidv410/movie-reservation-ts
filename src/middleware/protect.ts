@@ -10,7 +10,7 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
     try{
         if(!token){ throw new AppError(401, 'Access denied'); }
 
-        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as { id: number; role: string; email: string }
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as { id: string; role: string; email: string }
         req.user = decoded
 
         next()
