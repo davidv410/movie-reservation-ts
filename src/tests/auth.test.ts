@@ -39,7 +39,7 @@ describe("POST /auth/register", () => {
             password: "password123",
         });
         expect(res.status).toBe(400);
-        expect(res.body.message).toBe("User exists");
+        expect(res.body.message).toBe("User already exists");
     });
 });
 
@@ -57,7 +57,7 @@ describe("POST /auth/login", () => {
         });
         console.log(res.status)
         expect(res.status).toBe(200);
-        expect(res.body.message).toBe("User logged in.");
+        expect(res.body.message).toBe("User logged in");
     });
 
     it("should reject wrong password", async () => {
