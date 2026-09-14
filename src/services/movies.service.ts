@@ -95,7 +95,7 @@ export class MovieService{
 
         if(!movie){ throw new AppError(404, "Movie not found") }
 
-        await redis.set(key, JSON.stringify(movie), { ex: 60 * 60 })
+        await redis.set(key, movie, { ex: 60 * 60 })
 
         return movie
     }
@@ -162,11 +162,18 @@ export class MovieService{
     }
 
     async removeMovie(movieId: string){
-        const [remove] = await db.delete(movies).where(eq(movies.id, movieId)).returning()
-        if(!remove){ throw new AppError(404, "Movie not found") }
+
+        const [movie] = await db.select().from(movies).where(eq(movies.id, movieId))
+        if(!movie){
+            throw new AppError(404, "Movie not found")
+        }
+
+        const posterUrl = movie.posterUrl!.split('/').pop()!
+        await deleteFile(posterUrl)
+        await db.delete(movies).where(eq(movies.id, movieId)).returning()
 
         await redis.del(`movie:${movieId}`)
 
-        return remove
+        return { message: 'Movie removed' }
     }
 }
