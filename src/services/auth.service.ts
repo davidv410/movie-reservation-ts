@@ -82,15 +82,16 @@ export class AuthService {
             throw new AppError(401, "Refresh token reuse, please log in again")
         }
 
-        const accessToken = generateAccessToken(decoded.id, decoded.role, decoded.role)
-        const refreshToken = generateRefreshToken(decoded.id, decoded.role, decoded.role)
+        const accessToken = generateAccessToken(decoded.id, decoded.role, decoded.email)
+        const refreshToken = generateRefreshToken(decoded.id, decoded.role, decoded.email)
         const newTokenHash = generateHash(refreshToken)
         
         const newRefreshDecoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as { exp: number }
         const expiresAt = new Date(newRefreshDecoded.exp * 1000)
         
         await db.transaction(async (tx) => {
-            await tx.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, hashMatch.id))
+            const revoked = await tx.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.id, hashMatch.id)).returning()
+
             await tx.insert(refreshTokens).values({
                 tokenHash: newTokenHash,
                 expiresAt,
