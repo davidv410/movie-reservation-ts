@@ -43,7 +43,7 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
             maxAge: 7 * 24 * 60 * 60 * 1000  //7d
         })
 
-        res.status(200).json('User logged in')
+        res.status(200).json({ message: "User logged in" })
     }catch(err){
         next(err)
     }

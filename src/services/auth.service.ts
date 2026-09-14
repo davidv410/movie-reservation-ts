@@ -43,7 +43,7 @@ export class AuthService {
             userId: user.id
         })
 
-        return { message: "User logged in",accessToken, refreshToken }
+        return { accessToken, refreshToken }
     }
 
     async logoutUser(id: string){
