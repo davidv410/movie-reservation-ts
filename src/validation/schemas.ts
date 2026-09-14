@@ -21,6 +21,10 @@ export const createMovieSchema = z.object({
 
 export const updateMovieSchema = createMovieSchema.partial().extend({
   isActive: z.boolean().optional(),
+    genreIds: z.preprocess(
+    (val) => (val === undefined ? undefined : Array.isArray(val) ? val : [val]),
+    z.array(z.uuid()).min(1, "At least one genre is required")
+  ).optional(),
 });
 
 export const fileSchema = z.object({
