@@ -53,17 +53,17 @@ src/
 │   ├── seats/
 │   ├── reservations/
 │   └── admin/
-├── services/       # logic lives here, routes/controllers stay thin
-├── middleware/     # protect, isAdmin, rateLimiter, errorHandler
-├── db/             # drizzle schema + connection
-├── storage/        # r2 upload stuff
-├── validation/     # zod schemas
+├── services/       
+├── middleware/    
+├── db/             
+├── storage/        
+├── validation/     
 └── tests/
 ```
 
-## Data model (quick version)
+## Data model
 
-showtime belongs to a movie. seats belong to a showtime, unique per (showtimeId, row, number). reservation links user + showtime + seat, and that partial unique index mentioned above is what actually stops double bookings. Cancelling doesn't delete the row, it just flips status to cancelled and sets the seat back to available — figured it's better to keep history instead of deleting stuff.
+showtime belongs to a movie. seats belong to a showtime, unique per (showtimeId, row, number). reservation links user + showtime + seat, and that partial unique index mentioned above is what actually stops double bookings. Cancelling doesn't delete the row, it just flips status to cancelled and sets the seat back to available.
 
 ## Running it locally
 
