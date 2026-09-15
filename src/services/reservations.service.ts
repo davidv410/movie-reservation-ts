@@ -1,4 +1,4 @@
-import { reservations, seats } from "../db/schema.js";
+import { movies, reservations, seats, showtimes, users } from "../db/schema.js";
 import { db } from "../db/db.js";
 import type { createReservationBody } from "../validation/schemas.js";
 import { eq, and } from "drizzle-orm";
@@ -7,11 +7,56 @@ import { AppError } from "../types.js";
 export class ReservationsService {
     async getReservations(userId: string, role?: string){
         if(role && role === 'admin'){
-            const list = await db.select().from(reservations).leftJoin(seats, eq(reservations.seatId, seats.id))
+            const list = await db.select({ 
+                reservationId: reservations.id,
+                reservationStatus: reservations.status,
+
+                seatRow: seats.row,
+                seatNumber: seats.number,
+                seatPrice: seats.price,
+                seatIsAvailable: seats.isAvailable,
+
+                showtimeId: showtimes.id,
+                startTime: showtimes.startsAt,
+
+                movieTitle: movies.title,
+
+                userId: users.id,
+                userName: users.name,
+                userEmail: users.email,
+             })
+            .from(reservations)
+            .innerJoin(seats, eq(reservations.seatId, seats.id))
+            .innerJoin(showtimes, (eq(reservations.showtimeId, showtimes.id)))
+            .innerJoin(movies, eq(showtimes.movieId, movies.id))
+            .innerJoin(users, (eq(reservations.userId, users.id)))
             return list
         }
 
-        const list = await db.select().from(reservations).leftJoin(seats, eq(reservations.seatId, seats.id)).where(eq(reservations.userId, userId))
+        const list = await db.select({ 
+            reservationId: reservations.id,
+            reservationStatus: reservations.status,
+
+            seatRow: seats.row,
+            seatNumber: seats.number,
+            seatPrice: seats.price,
+            seatIsAvailable: seats.isAvailable,
+
+            showtimeId: showtimes.id,
+            startTime: showtimes.startsAt,
+
+            movieTitle: movies.title,
+
+            userId: users.id,
+            userName: users.name,
+            userEmail: users.email,
+            })
+        .from(reservations)
+        .leftJoin(seats, eq(reservations.seatId, seats.id))
+        .innerJoin(showtimes, (eq(reservations.showtimeId, showtimes.id)))
+        .innerJoin(movies, eq(showtimes.movieId, movies.id))
+        .innerJoin(users, (eq(reservations.userId, users.id)))
+        .where(eq(reservations.userId, userId))
         return list
     }
 
