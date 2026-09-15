@@ -43,7 +43,11 @@ export class AuthService {
             userId: user.id
         })
 
-        return { accessToken, refreshToken }
+        return { 
+            accessToken,
+            refreshToken,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role }
+        }
     }
 
     async logoutUser(id: string){
