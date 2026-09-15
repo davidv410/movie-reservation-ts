@@ -51,11 +51,11 @@ export const login = async (req:Request, res:Response, next:NextFunction) => {
 
 export const logout = async (req:Request, res:Response, next:NextFunction) =>{
     try{
-        if (!req.user) {
+        if (!req.user || !req.cookies.refreshToken) {
             throw new AppError(401, 'Unauthorized');
         }
 
-        await authService.logoutUser(req.user.id)
+        await authService.logoutUser(req.user.id, req.cookies.refreshToken)
 
         res.clearCookie('token')
         res.clearCookie('refreshToken')

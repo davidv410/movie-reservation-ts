@@ -50,8 +50,9 @@ export class AuthService {
         }
     }
 
-    async logoutUser(id: string){
-        await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.userId, id))
+    async logoutUser(id: string, token: string){
+        const tokenHash = generateHash(token)
+        await db.update(refreshTokens).set({ revokedAt: new Date() }).where(and(eq(refreshTokens.userId, id), eq(refreshTokens.tokenHash, tokenHash)))
     }
 
     async refreshUser(token: string){
