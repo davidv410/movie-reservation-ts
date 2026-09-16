@@ -1,8 +1,9 @@
 import { movies, reservations, seats, showtimes, users } from "../db/schema.js";
 import { db } from "../db/db.js";
 import type { createReservationBody } from "../validation/schemas.js";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { AppError } from "../types.js";
+import { sendEmailSeatConfirmation, sendEmailSeatCancellation } from "./emailNotifications.service.js";
 
 export class ReservationsService {
     async getReservations(userId: string, role?: string){
@@ -66,37 +67,69 @@ export class ReservationsService {
         return reservation
     }
 
-    async createReservation(userId: string, data: createReservationBody){
+    async createReservation(userId: string, userEmail: string, data: createReservationBody){
         const transaction = await db.transaction(async(tx) => {
-            const [seat] = await tx.select().from(seats).where(eq(seats.id, data.seatId)).for("update")
-            if(!seat){ throw new AppError(404, "Seat not found") }
-            if(!seat?.isAvailable){ throw new AppError(400, "Seat is not available") }
-    
-            await tx.update(seats).set({ isAvailable: false }).where(eq(seats.id, seat.id))
-    
-            const [reservation] = await tx.insert(reservations).values({
-                userId,
-                ...data,
-                pricePaid: seat.price
-            }).returning()
+            const waitingSeats = []
+            for(const seatId of data.seatIds){
+                const [seat] = await tx.select().from(seats).where(eq(seats.id, seatId)).for("update")
+                if(!seat){ throw new AppError(404, "Seat not found") }
+                if(!seat?.isAvailable){ throw new AppError(400, "Seat is not available") }
+                waitingSeats.push(seat)
+            }
+            
+            await tx.update(seats).set({ isAvailable: false }).where(inArray(seats.id, waitingSeats.map(s => s.id)))
 
-            return { reservation }
+            const addedReservations = await tx.insert(reservations).values(waitingSeats.map(seat => ({
+                userId,
+                showtimeId: data.showtimeId,
+                seatId: seat.id,
+                pricePaid: seat.price
+            }))).returning()
+
+            const [movieShowtimeInfo] = await tx.select({
+                    startsAt: showtimes.startsAt,
+                    movieTitle: movies.title,
+            })
+            .from(showtimes)
+            .innerJoin(movies, eq(showtimes.movieId, movies.id))
+            .where(eq(showtimes.id, data.showtimeId))
+
+            if (!movieShowtimeInfo) {
+                throw new AppError(404, "Showtime not found")
+            }
+
+            return { reservation: addedReservations, seats: waitingSeats, movieShowtimeInfo: movieShowtimeInfo }
         })
 
+        sendEmailSeatConfirmation({userEmail, movieTitle: transaction.movieShowtimeInfo.movieTitle, startsAt: transaction.movieShowtimeInfo.startsAt, seats: transaction.seats.map(s => `${s.row}${s.number}`)})
         return { reservation: transaction.reservation }
     }
 
 
-     async removeReservation(userId: string, reservationId: string){
-        const [reservation] = await db.select().from(reservations)
+     async removeReservation(userId: string, userEmail: string, reservationId: string){
+        const [reservation] = await db.select({
+            reservationStatus: reservations.status,
+            movieTitle: movies.title,
+            startsAt: showtimes.startsAt,
+            seatId: seats.id,
+            seatRow: seats.row,
+            seatNumber: seats.number
+        }).from(reservations)
+        .innerJoin(showtimes, eq(reservations.showtimeId, showtimes.id))
+        .innerJoin(seats, eq(reservations.seatId, seats.id))
+        .innerJoin(movies, eq(showtimes.movieId, movies.id))
         .where(and(eq(reservations.id, reservationId), eq(reservations.userId, userId)));
 
         if (!reservation) throw new AppError(404, "Reservation not found");
-        if (reservation.status === "cancelled") throw new AppError(400, "Reservation already cancelled");
+        if (reservation.reservationStatus === "cancelled") throw new AppError(400, "Reservation already cancelled");
 
-        const [cancelled] = await db.update(reservations).set({ status: "cancelled", cancelledAt: new Date() }).where(and(eq(reservations.userId, userId), eq(reservations.id, reservationId))).returning()
+        const [cancelled] = await db.update(reservations)
+        .set({ status: "cancelled", cancelledAt: new Date() })
+        .where(and(eq(reservations.userId, userId), eq(reservations.id, reservationId))).returning()
 
         await db.update(seats).set({ isAvailable: true }).where(eq(seats.id, reservation.seatId))
+
+        sendEmailSeatCancellation({userEmail, movieTitle: reservation.movieTitle, startsAt: reservation.startsAt, seat: `${reservation.seatRow}${reservation.seatNumber}`})
 
         return cancelled
     }
