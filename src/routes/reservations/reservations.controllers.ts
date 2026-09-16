@@ -33,7 +33,7 @@ export const createReservation = async (req: Request, res: Response, next: NextF
         const parsed = createReservationSchema.safeParse(req.body)
         if(!parsed.success){ throw new AppError(400, parsed.error.issues[0]?.message ?? 'Invalid body') }
 
-        const response = await reservationsService.createReservation(req.user!.id, parsed.data)
+        const response = await reservationsService.createReservation(req.user!.id, req.user!.email, parsed.data)
 
         res.status(201).json({ response })
     }catch(err){
@@ -47,7 +47,7 @@ export const removeReservation = async (req: Request, res: Response, next: NextF
         const parsedParams = paramsSchema.safeParse(req.params)
         if(!parsedParams.success){ throw new AppError(400, parsedParams.error.issues[0]?.message ?? 'Invalid requst params') }
 
-        const response = await reservationsService.removeReservation(req.user!.id, parsedParams.data.id)
+        const response = await reservationsService.removeReservation(req.user!.id, req.user!.email,parsedParams.data.id)
 
         res.status(200).json({ cancelled: response })
     }catch(err){
