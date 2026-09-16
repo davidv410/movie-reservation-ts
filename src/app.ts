@@ -1,9 +1,7 @@
-import 'dotenv/config'
 import express from 'express';
 import { errorHandler } from './middleware/errorHandler.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors'
-
 
 import { authRouter } from "./routes/auth/auth.routes.js";
 import { moviesRouter } from './routes/movies/movies.routes.js';
@@ -12,6 +10,10 @@ import { reservationsRouter } from './routes/reservations/reservations.routes.js
 import { adminRouter } from './routes/admin/admin.router.js';
 import {seatsRouter} from "./routes/seats/seats.routes.js";
 import {genresRoutes} from "./routes/genres/genres.routes.js";
+import { serverAdapter } from './lib/bull-board.js';
+
+import { isAdmin } from './middleware/isAdmin.js';
+import { protect } from './middleware/protect.js';
 
 const app = express()
 
@@ -31,6 +33,8 @@ app.use('/reservations', reservationsRouter)
 app.use('/admin', adminRouter)
 app.use('/seats', seatsRouter)
 app.use('/genres', genresRoutes)
+
+app.use("/admin/queues", protect, isAdmin, serverAdapter.getRouter());
 
 app.use(errorHandler);
 
