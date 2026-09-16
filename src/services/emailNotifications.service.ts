@@ -15,6 +15,7 @@ export type emailDataCancel = {
     seat: string
 }
 
+export type EmailJob = emailDataCancel | emailDataConfirm
 
 export const sendEmailSeatConfirmation = async (info: emailDataConfirm) => {
     const { data, error } = await resend.emails.send({
