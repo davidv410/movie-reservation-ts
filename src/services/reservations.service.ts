@@ -4,6 +4,7 @@ import type { createReservationBody } from "../validation/schemas.js";
 import { eq, and, inArray } from "drizzle-orm";
 import { AppError } from "../types.js";
 import { sendEmailSeatConfirmation, sendEmailSeatCancellation } from "./emailNotifications.service.js";
+import { emailQueue } from "./queues/email.queue.js";
 
 export class ReservationsService {
     async getReservations(userId: string, role?: string){
@@ -100,8 +101,14 @@ export class ReservationsService {
 
             return { reservation: addedReservations, seats: waitingSeats, movieShowtimeInfo: movieShowtimeInfo }
         })
+        
+        emailQueue.add("confirmation", {
+            userEmail,
+            movieTitle: transaction.movieShowtimeInfo.movieTitle,
+            startsAt: transaction.movieShowtimeInfo.startsAt,
+            seats: transaction.seats.map(s => `${s.row}${s.number}`)
+        })
 
-        sendEmailSeatConfirmation({userEmail, movieTitle: transaction.movieShowtimeInfo.movieTitle, startsAt: transaction.movieShowtimeInfo.startsAt, seats: transaction.seats.map(s => `${s.row}${s.number}`)})
         return { reservation: transaction.reservation }
     }
 
@@ -129,8 +136,12 @@ export class ReservationsService {
 
         await db.update(seats).set({ isAvailable: true }).where(eq(seats.id, reservation.seatId))
 
-        sendEmailSeatCancellation({userEmail, movieTitle: reservation.movieTitle, startsAt: reservation.startsAt, seat: `${reservation.seatRow}${reservation.seatNumber}`})
-
+        emailQueue.add("cancellation", {
+            userEmail, 
+            movieTitle: reservation.movieTitle, 
+            startsAt: reservation.startsAt, 
+            seat: `${reservation.seatRow}${reservation.seatNumber}`
+        })
         return cancelled
     }
 }
