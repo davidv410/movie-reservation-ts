@@ -59,7 +59,7 @@ export const querySchema = z.object({
 
 export const createReservationSchema = z.object({
   showtimeId: z.uuid(),
-  seatId: z.uuid(),
+  seatIds: z.array(z.uuid())
 });
 
 export type registerSchemaBody = z.infer<typeof registerSchema>
