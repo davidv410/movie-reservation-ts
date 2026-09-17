@@ -22,14 +22,23 @@ export const stripeWebhook = async (req: Request, res: Response) => {
     }
 
     if(event.type === "payment_intent.succeeded"){
+
         const paymentIntent = event.data.object
         await paymentSucceeded(paymentIntent.id)
+
     }else if(event.type === "payment_intent.payment_failed"){
+
         const paymentIntent = event.data.object
         await paymentFailed(paymentIntent.id)
+
     }else if(event.type === "payment_intent.canceled"){
+
         const paymentIntent = event.data.object
         await paymentCancelled(paymentIntent.id)
+
+    }else if(event.type === "charge.refunded"){
+        const charge = event.data.object
+        await chargeRefunded(charge.payment_intent as string)
     }else{
         console.log(`Other event type: ${event.type}`)
     }
@@ -106,6 +115,31 @@ const paymentCancelled = async (stripePaymentIntentId: string) => {
 
     const pendingReservations = await db.select().from(reservations).where(eq(reservations.paymentId, payment.id))
 
-    await db.update(reservations).set({ status: "cancelled" }).where(eq(reservations.paymentId, payment.id))
+    await db.update(reservations).set({ status: "expired" }).where(eq(reservations.paymentId, payment.id))
     await db.update(seats).set({ isAvailable: true }).where(inArray(seats.id, pendingReservations.map(r => r.seatId)))
+}
+
+const chargeRefunded = async (stripePaymentIntentId: string) => {
+    const [payment] = await db.select().from(payments).where(eq(payments.stripePaymentId, stripePaymentIntentId))
+    if(!payment) return
+
+    await db.update(payments).set({ status: "refunded" }).where(eq(payments.id, payment.id))
+
+    const userReservations = await db.select({ seatId: reservations.seatId, pricePaid: reservations.pricePaid, userEmail: users.email })
+    .from(reservations)
+    .innerJoin(users, eq(reservations.userId, users.id))
+    .where(eq(reservations.paymentId, payment.id))
+
+    const totalAmount = userReservations.reduce((sum, r) => sum + Number(r.pricePaid), 0)
+    
+    await db.update(reservations).set({ status: "cancelled" }).where(eq(reservations.paymentId, payment.id))
+
+    await db.update(seats).set({ isAvailable: true }).where(inArray(seats.id, userReservations.map(s => s.seatId)))
+
+    const { userEmail } = userReservations[0]!
+    
+    emailQueue.add("cancelation", {
+        userEmail,
+        totalAmount
+    }).catch(err => console.error("Failed to queue confirmation email:", err))    
 }
