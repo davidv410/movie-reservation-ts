@@ -49,7 +49,7 @@ export const removeReservation = async (req: Request, res: Response, next: NextF
 
         const response = await reservationsService.removeReservation(req.user!.id, req.user!.email,parsedParams.data.id)
 
-        res.status(200).json({ cancelled: response })
+        res.status(200).json(response.message)
     }catch(err){
         next(err)
     }
