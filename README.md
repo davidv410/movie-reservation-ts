@@ -25,6 +25,24 @@ const transaction = await db.transaction(async (tx) => {
 });
 ```
 
+## Payments (Stripe)
+
+1. Seats get locked, reservations and payment are inserted as pending
+2. The frontend collects card details via Stripe's Payment Element and confirms the payment.
+3. A Stripe webhook (`payment_intent.succeeded` / `payment_intent.payment_failed` / `payment_intent.canceled` / `charge.refunded`) confirms or cancels a booking, never the initial request or the frontend's response.is the source of truth.
+4. A declined card attempt does not release the seat. Only an explicit cancellation or a successful payment resolves a `pending_payment` reservation.
+5. Cancelling a paid (`confirmed`) reservation triggers a Stripe refund. Since one payment can cover multiple seats booked together, cancelling any one seat refunds and cancels the entire booking.
+
+Currently running in Stripe test mode
+
+## Background jobs (BullMQ)
+ 
+Two queues, backed by the same Upstash Redis instance used for rate limiting (via its TCP endpoint — BullMQ needs a real persistent connection, not the REST client):
+ 
+- **`email`** — confirmation and cancellation emails, sent via Resend.
+- **`cleanup`** — a delayed job scheduled at booking time that checks, 15 minutes later, whether a reservation is still `pending_payment`. If the user never completed checkout, it cancels the PaymentIntent on Stripe's side, which triggers `payment_intent.canceled` and releases the seat.
+
+
 ## Features
 
 - Register/login with JWT (access + refresh tokens), passwords hashed with bcrypt
@@ -32,14 +50,16 @@ const transaction = await db.transaction(async (tx) => {
 - Movies + genres CRUD, poster images uploaded to Cloudflare R2
 - Showtimes CRUD (movie, hall, time)
 - Seat maps per showtime: row, number, type, price
+- Book multiple seats atomically, pay via Stripe, view bookings, cancel with automatic refund
+- Confirmation/cancellation emails via Resend, sent through a BullMQ queue
+- Abandoned-checkout cleanup so unpaid seat holds don't lock seats forever
 - Book / view / cancel reservations, cancelling frees the seat back up
-- Basic admin reports (all reservations, per-showtime, etc.)
 - Rate limiting with Upstash Redis
 - Zod for request validation
 
 ## Stack
 
-Node, TypeScript, Express, PostgreSQL + Drizzle ORM, JWT auth, Upstash Redis, Cloudflare R2, Zod, Vitest + Supertest for tests. GitHub Actions runs tests then builds/pushes a Docker image on push to main.
+Node, TypeScript, Express, PostgreSQL + Drizzle ORM, JWT auth, Upstash Redis, BullMQ, Stripe, Resend, Cloudflare R2, Zod, Vitest + Supertest for tests. GitHub Actions runs tests then builds/pushes a Docker image on push to main.
 
 ## Folder structure
 
@@ -52,18 +72,18 @@ src/
 │   ├── showtimes/
 │   ├── seats/
 │   ├── reservations/
+│   ├── webhooks/
 │   └── admin/
-├── services/       
-├── middleware/    
-├── db/             
-├── storage/        
-├── validation/     
+├── services/
+│   └── queues/
+├── middleware/
+├── db/
+├── storage/
+├── lib/
+├── validation/
 └── tests/
+
 ```
-
-## Data model
-
-showtime belongs to a movie. seats belong to a showtime, unique per (showtimeId, row, number). reservation links user + showtime + seat, and that partial unique index mentioned above is what actually stops double bookings. Cancelling doesn't delete the row, it just flips status to cancelled and sets the seat back to available.
 
 ## Running it locally
 
@@ -80,21 +100,28 @@ Make a `.env` file with:
 ```env
 PORT=5000
 NODE_ENV=development
-
+ 
 DATABASE_URL=postgres://user:password@localhost:5432/movie_reservation
 TEST_DATABASE_URL=postgres://user:password@localhost:5432/movie_reservation_test
-
+ 
 ACCESS_TOKEN_SECRET=
 REFRESH_TOKEN_SECRET=
-
+ 
 REDIS_URL=
 REDIS_TOKEN=
-
+REDIS_URL_TCP=
+ 
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET_NAME=
 R2_PUBLIC_URL=
+ 
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+ 
+RESEND_API_KEY=
+
 ```
 
 Then:
@@ -106,15 +133,16 @@ npm run dev
 
 Runs on `http://localhost:5000`.
 
+For Stripe webhooks locally, run the Stripe CLI
+
 Tests: `npm test` (uses `TEST_DATABASE_URL`). Same thing runs in CI before it builds the Docker image.
 
 ## Still to do
 
 There's more I want to add:
 
-- Right now booking is instant confirm/reject, want to add a temporary hold (like 5-10 min) while someone's checking out
-- Stripe for actual payments
-- Background jobs for stuff like confirmation emails
-- More tests, I've tested auth but not the double-booking scenario directly, which is the whole point of this project
+- More tests — I've tested auth but not the double-booking scenario.
 - API docs
-- Better logging, right now it's just console.log
+- Better logging, right now it's mostly console.log
+- A daily job to mark reservations `completed` once their showtime has passed, for cleaner reporting
+- A cutoff window on cancellations
