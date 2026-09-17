@@ -35,7 +35,7 @@ export const createReservation = async (req: Request, res: Response, next: NextF
 
         const response = await reservationsService.createReservation(req.user!.id, req.user!.email, parsed.data)
 
-        res.status(201).json({ response })
+        res.status(201).json(response)
     }catch(err){
         next(err)
     }
