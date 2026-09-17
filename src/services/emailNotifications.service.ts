@@ -10,9 +10,7 @@ export type emailDataConfirm = {
 
 export type emailDataCancel = {
     userEmail: string
-    movieTitle: string
-    startsAt: Date | string
-    seat: string
+    totalAmount: number
 }
 
 export type EmailJob = emailDataCancel | emailDataConfirm
@@ -35,12 +33,12 @@ export const sendEmailSeatConfirmation = async (info: emailDataConfirm) => {
   console.log('Mail sent');
 }
 
-export const sendEmailSeatCancellation = async (info: emailDataCancel) => {
+export const sendEmailSeatCancelation = async (info: emailDataCancel) => {
     const { data, error } = await resend.emails.send({
       from: 'onboarding@resend.dev',
       to: `${info.userEmail}`,
-      subject: `Seat booking cancellation for ${info.movieTitle}`,
-      html: `<p>You have cancelled a seat (${info.seat}) for ${info.movieTitle}</p><br/>`,
+      subject: `Seat booking cancelation - refund`,
+      html: `<p>You have successfully canceled/refunded. Total amount ${info.totalAmount} eur</p><br/>`,
     });
   
     if (error) {
