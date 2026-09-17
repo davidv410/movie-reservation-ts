@@ -1,10 +1,11 @@
-import { movies, reservations, seats, showtimes, users } from "../db/schema.js";
+import { movies, payments, reservations, seats, showtimes, users } from "../db/schema.js";
 import { db } from "../db/db.js";
 import type { createReservationBody } from "../validation/schemas.js";
 import { eq, and, inArray } from "drizzle-orm";
 import { AppError } from "../types.js";
 import { sendEmailSeatConfirmation, sendEmailSeatCancellation } from "./emailNotifications.service.js";
 import { emailQueue } from "./queues/email.queue.js";
+import { stripe } from "../lib/stripe.js";
 
 export class ReservationsService {
     async getReservations(userId: string, role?: string){
@@ -80,36 +81,35 @@ export class ReservationsService {
             
             await tx.update(seats).set({ isAvailable: false }).where(inArray(seats.id, waitingSeats.map(s => s.id)))
 
+            const totalAmount = waitingSeats.reduce((sum, seat) => sum + Number(seat.price), 0)
+            const totalCents = Math.round(totalAmount * 100)
+
+            const [payment] = await tx.insert(payments).values({
+                    amount: totalAmount.toFixed(2),
+                    currency: "eur",
+            }).returning()
+
             const addedReservations = await tx.insert(reservations).values(waitingSeats.map(seat => ({
                 userId,
                 showtimeId: data.showtimeId,
                 seatId: seat.id,
-                pricePaid: seat.price
+                pricePaid: seat.price,
+                paymentId: payment!.id
             }))).returning()
 
-            const [movieShowtimeInfo] = await tx.select({
-                    startsAt: showtimes.startsAt,
-                    movieTitle: movies.title,
-            })
-            .from(showtimes)
-            .innerJoin(movies, eq(showtimes.movieId, movies.id))
-            .where(eq(showtimes.id, data.showtimeId))
 
-            if (!movieShowtimeInfo) {
-                throw new AppError(404, "Showtime not found")
-            }
-
-            return { reservation: addedReservations, seats: waitingSeats, movieShowtimeInfo: movieShowtimeInfo }
+            return { payment: payment, totalCents, reservations: addedReservations}
         })
-        
-        emailQueue.add("confirmation", {
-            userEmail,
-            movieTitle: transaction.movieShowtimeInfo.movieTitle,
-            startsAt: transaction.movieShowtimeInfo.startsAt,
-            seats: transaction.seats.map(s => `${s.row}${s.number}`)
+    
+        const paymentIntent = await stripe.paymentIntents.create({
+            amount: transaction.totalCents,
+            currency: "eur",
+            metadata: { paymentId: transaction.payment!.id },
         })
 
-        return { reservation: transaction.reservation }
+        await db.update(payments).set({ stripePaymentId: paymentIntent.id }).where(eq(payments.id, transaction.payment!.id))
+    
+        return { reservations: transaction.reservations, clientSecret: paymentIntent.client_secret }
     }
 
 
@@ -125,10 +125,10 @@ export class ReservationsService {
         .innerJoin(showtimes, eq(reservations.showtimeId, showtimes.id))
         .innerJoin(seats, eq(reservations.seatId, seats.id))
         .innerJoin(movies, eq(showtimes.movieId, movies.id))
-        .where(and(eq(reservations.id, reservationId), eq(reservations.userId, userId)));
+        .where(and(eq(reservations.id, reservationId), eq(reservations.userId, userId)))
 
-        if (!reservation) throw new AppError(404, "Reservation not found");
-        if (reservation.reservationStatus === "cancelled") throw new AppError(400, "Reservation already cancelled");
+        if (!reservation) throw new AppError(404, "Reservation not found")
+        if (reservation.reservationStatus === "cancelled") throw new AppError(400, "Reservation already cancelled")
 
         const [cancelled] = await db.update(reservations)
         .set({ status: "cancelled", cancelledAt: new Date() })
