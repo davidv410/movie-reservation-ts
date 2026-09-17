@@ -3,7 +3,7 @@ import { db } from "../db/db.js";
 import type { createReservationBody } from "../validation/schemas.js";
 import { eq, and, inArray } from "drizzle-orm";
 import { AppError } from "../types.js";
-import { sendEmailSeatConfirmation, sendEmailSeatCancellation } from "./emailNotifications.service.js";
+import { sendEmailSeatConfirmation, sendEmailSeatCancelation } from "./emailNotifications.service.js";
 import { emailQueue } from "./queues/email.queue.js";
 import { cleanupQueue } from "./queues/cleanup.queue.js";
 import { stripe } from "../lib/stripe.js";
@@ -121,35 +121,30 @@ export class ReservationsService {
 
 
      async removeReservation(userId: string, userEmail: string, reservationId: string){
-        const [reservation] = await db.select({
-            reservationStatus: reservations.status,
-            movieTitle: movies.title,
-            startsAt: showtimes.startsAt,
-            seatId: seats.id,
-            seatRow: seats.row,
-            seatNumber: seats.number
-        }).from(reservations)
-        .innerJoin(showtimes, eq(reservations.showtimeId, showtimes.id))
-        .innerJoin(seats, eq(reservations.seatId, seats.id))
-        .innerJoin(movies, eq(showtimes.movieId, movies.id))
-        .where(and(eq(reservations.id, reservationId), eq(reservations.userId, userId)))
+        const [reservation] = await db.select().from(reservations).where(eq(reservations.id, reservationId))
 
-        if (!reservation) throw new AppError(404, "Reservation not found")
-        if (reservation.reservationStatus === "cancelled") throw new AppError(400, "Reservation already cancelled")
+        if(!reservation){
+            throw new AppError(404, "Reservation not found")
+        }
 
-        const [cancelled] = await db.update(reservations)
-        .set({ status: "cancelled", cancelledAt: new Date() })
-        .where(and(eq(reservations.userId, userId), eq(reservations.id, reservationId))).returning()
+        if(reservation.status !== "confirmed"){
+            throw new AppError(400, "Only confirmed reservations can be cancelled")
+        }
 
-        await db.update(seats).set({ isAvailable: true }).where(eq(seats.id, reservation.seatId))
+         if (!reservation.paymentId) {
+            throw new AppError(400, "Reservation doesnt have stripe payment id")
+        }
 
-        emailQueue.add("cancellation", {
-            userEmail, 
-            movieTitle: reservation.movieTitle, 
-            startsAt: reservation.startsAt, 
-            seat: `${reservation.seatRow}${reservation.seatNumber}`
+        const [payment] = await db.select().from(payments).where(eq(payments.id, reservation.paymentId))
+
+        if (!payment || !payment.stripePaymentId) {
+            throw new AppError(400, "No payment found for this reservation");
+        }
+
+        await stripe.refunds.create({
+            payment_intent: payment.stripePaymentId
         })
 
-        return cancelled
+        return { message: "Refunded" }
     }
 }
