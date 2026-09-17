@@ -12,6 +12,8 @@ import {seatsRouter} from "./routes/seats/seats.routes.js";
 import {genresRoutes} from "./routes/genres/genres.routes.js";
 import { serverAdapter } from './lib/bull-board.js';
 
+import { stripeWebhook } from './routes/stripe/stripeWebhook.js';
+
 import { isAdmin } from './middleware/isAdmin.js';
 import { protect } from './middleware/protect.js';
 
@@ -23,6 +25,9 @@ app.use(cors({
     ],
     credentials: true,
 }));
+
+app.post("/webhooks/stripe", express.raw({ type: "application/json" }), stripeWebhook);
+
 app.use(express.json())
 app.use(cookieParser())
 
