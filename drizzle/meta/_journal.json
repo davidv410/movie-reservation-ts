@@ -36,6 +36,27 @@
       "when": 1789313655867,
       "tag": "0004_unique_apocalypse",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789537667550,
+      "tag": "0005_mean_vampiro",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789537839764,
+      "tag": "0006_thankful_dracula",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789542096863,
+      "tag": "0007_useful_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,8 @@ export const rolesEnum = pgEnum('roles', ["admin", "user"])
 export const reservationStatusEnum = pgEnum("reservation_status", [
   "confirmed",
   "cancelled",
+  "pending",
+  "expired"
 ]);
  
 export const seatTypeEnum = pgEnum("seat_type", [
@@ -27,6 +29,13 @@ export const seatTypeEnum = pgEnum("seat_type", [
   "premium",
   "accessible",
 ]);
+
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending",
+  "succeeded",
+  "failed",
+  "refunded"
+])
 
 
 export const users = pgTable('users', {
@@ -123,8 +132,9 @@ export const reservations = pgTable("reservations", {
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     showtimeId: uuid("showtime_id").notNull().references(() => showtimes.id, { onDelete: "cascade" }),
     seatId: uuid("seat_id").notNull().references(() => seats.id, { onDelete: "cascade" }),
-    status: reservationStatusEnum("status").notNull().default("confirmed"),
+    status: reservationStatusEnum("status").notNull().default("pending"),
     pricePaid: decimal("price_paid", { precision: 10, scale: 2 }).notNull(),
+    paymentId: uuid("payment_id").references(() => payments.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     cancelledAt: timestamp("cancelled_at"),
   },
@@ -138,3 +148,13 @@ export const reservations = pgTable("reservations", {
     statusIdx: index("reservations_status_idx").on(t.status),
   })
 );
+
+export const payments = pgTable("payments", {
+  id: uuid().primaryKey().defaultRandom(),
+  stripePaymentId: text("stripe_payment_id").unique(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull(),
+  status: paymentStatusEnum("status").notNull().default("pending"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+})
