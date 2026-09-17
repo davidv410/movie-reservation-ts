@@ -5,6 +5,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { AppError } from "../types.js";
 import { sendEmailSeatConfirmation, sendEmailSeatCancellation } from "./emailNotifications.service.js";
 import { emailQueue } from "./queues/email.queue.js";
+import { cleanupQueue } from "./queues/cleanup.queue.js";
 import { stripe } from "../lib/stripe.js";
 
 export class ReservationsService {
@@ -108,6 +109,12 @@ export class ReservationsService {
         })
 
         await db.update(payments).set({ stripePaymentId: paymentIntent.id }).where(eq(payments.id, transaction.payment!.id))
+
+        cleanupQueue.add(
+            "expire-pending-payment",
+            { paymentId: transaction.payment!.id },
+            { delay: 15 * 60 * 1000 }
+        ).catch(err => console.error("Failed to schedule cleanup job:", err));
     
         return { reservations: transaction.reservations, clientSecret: paymentIntent.client_secret }
     }
@@ -142,6 +149,7 @@ export class ReservationsService {
             startsAt: reservation.startsAt, 
             seat: `${reservation.seatRow}${reservation.seatNumber}`
         })
+
         return cancelled
     }
 }
