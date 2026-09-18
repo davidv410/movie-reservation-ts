@@ -57,6 +57,13 @@
       "when": 1789542096863,
       "tag": "0007_useful_lethal_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789759160049,
+      "tag": "0008_cuddly_zuras",
+      "breakpoints": true
     }
   ]
 }
