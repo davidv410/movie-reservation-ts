@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import './services/queues/email.worker.js'
 import './services/queues/cleanup.worker.js'
+import './services/queues/complete-reservations.worker.js'
 import app from "./app.js";
 
 const PORT = process.env.PORT || 5000;
