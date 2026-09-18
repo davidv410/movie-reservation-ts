@@ -60,8 +60,10 @@ const paymentSucceeded = async (stripePaymentIntentId: string) => {
         return; 
     }
 
-    await db.update(payments).set({ status: "succeeded" }).where(eq(payments.id, payment.id))
-    await db.update(reservations).set({ status: "confirmed" }).where(eq(reservations.paymentId, payment.id))
+    await db.transaction(async (tx) => {
+        await tx.update(payments).set({ status: "succeeded" }).where(eq(payments.id, payment.id))
+        await tx.update(reservations).set({ status: "confirmed" }).where(eq(reservations.paymentId, payment.id))
+    })
 
     const bookingInfo = await db.select({
         userEmail: users.email,
@@ -111,35 +113,41 @@ const paymentCancelled = async (stripePaymentIntentId: string) => {
 
     if (!payment) return
 
-    await db.update(payments).set({ status: "failed" }).where(eq(payments.id, payment.id))
-
-    const pendingReservations = await db.select().from(reservations).where(eq(reservations.paymentId, payment.id))
-
-    await db.update(reservations).set({ status: "expired" }).where(eq(reservations.paymentId, payment.id))
-    await db.update(seats).set({ isAvailable: true }).where(inArray(seats.id, pendingReservations.map(r => r.seatId)))
+    await db.transaction(async (tx) => {
+        await tx.update(payments).set({ status: "failed" }).where(eq(payments.id, payment.id))
+    
+        const pendingReservations = await tx.select().from(reservations).where(eq(reservations.paymentId, payment.id))
+    
+        await tx.update(reservations).set({ status: "expired" }).where(eq(reservations.paymentId, payment.id))
+        await tx.update(seats).set({ isAvailable: true }).where(inArray(seats.id, pendingReservations.map(r => r.seatId)))
+    })
 }
 
 const chargeRefunded = async (stripePaymentIntentId: string) => {
     const [payment] = await db.select().from(payments).where(eq(payments.stripePaymentId, stripePaymentIntentId))
     if(!payment) return
 
-    await db.update(payments).set({ status: "refunded" }).where(eq(payments.id, payment.id))
-
-    const userReservations = await db.select({ seatId: reservations.seatId, pricePaid: reservations.pricePaid, userEmail: users.email })
-    .from(reservations)
-    .innerJoin(users, eq(reservations.userId, users.id))
-    .where(eq(reservations.paymentId, payment.id))
-
-    const totalAmount = userReservations.reduce((sum, r) => sum + Number(r.pricePaid), 0)
+    const transaction = await db.transaction(async(tx) => {
+        await tx.update(payments).set({ status: "refunded" }).where(eq(payments.id, payment.id))
     
-    await db.update(reservations).set({ status: "cancelled" }).where(eq(reservations.paymentId, payment.id))
+        const userReservations = await tx.select({ seatId: reservations.seatId, pricePaid: reservations.pricePaid, userEmail: users.email })
+        .from(reservations)
+        .innerJoin(users, eq(reservations.userId, users.id))
+        .where(eq(reservations.paymentId, payment.id))
+    
+        const totalAmount = userReservations.reduce((sum, r) => sum + Number(r.pricePaid), 0)
+        
+        await tx.update(reservations).set({ status: "cancelled" }).where(eq(reservations.paymentId, payment.id))
+    
+        await tx.update(seats).set({ isAvailable: true }).where(inArray(seats.id, userReservations.map(s => s.seatId)))
 
-    await db.update(seats).set({ isAvailable: true }).where(inArray(seats.id, userReservations.map(s => s.seatId)))
+        return { userReservations, totalAmount }
+    })
 
-    const { userEmail } = userReservations[0]!
+    const { userEmail } = transaction.userReservations[0]!
     
     emailQueue.add("cancelation", {
         userEmail,
-        totalAmount
+        totalAmount: transaction.totalAmount
     }).catch(err => console.error("Failed to queue confirmation email:", err))    
 }
