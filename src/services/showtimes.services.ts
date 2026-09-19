@@ -31,7 +31,7 @@ export class ShowtimesService{
 
         if (conditions.length) return await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id)).where(and(...conditions))
 
-        const result = await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id))
+        const result = await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id)).where(gt(showtimes.startsAt, new Date()))
 
         await redis.set(key, JSON.stringify(result),  { ex: 60 * 60 })
 
