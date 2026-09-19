@@ -14,14 +14,20 @@ Two core pieces:
 ```ts
 // src/services/reservations.service.ts
 const transaction = await db.transaction(async (tx) => {
-  const [seat] = await tx.select().from(seats).where(eq(seats.id, data.seatId)).for("update");
-  if (!seat) throw new AppError(404, "Seat not found");
-  if (!seat.isAvailable) throw new AppError(400, "Seat is not available");
+  const lockedSeats = [];
+  for (const seatId of data.seatIds) {
+    const [seat] = await tx.select().from(seats).where(eq(seats.id, seatId)).for("update");
+    if (!seat) throw new AppError(404, "Seat not found");
+    if (!seat.isAvailable) throw new AppError(400, "Seat is not available");
+    lockedSeats.push(seat);
+  }
 
-  await tx.update(seats).set({ isAvailable: false }).where(eq(seats.id, seat.id));
-  const [reservation] = await tx.insert(reservations).values({ userId, ...data, pricePaid: seat.price }).returning();
+  await tx.update(seats).set({ isAvailable: false }).where(inArray(seats.id, lockedSeats.map(s => s.id)));
+  const reservations = await tx.insert(reservations).values(
+    lockedSeats.map(seat => ({ userId, seatId: seat.id, pricePaid: seat.price, paymentId: payment.id, status: "pending_payment" }))
+  ).returning();
 
-  return { reservation };
+  return { reservations, ... };
 });
 ```
 
