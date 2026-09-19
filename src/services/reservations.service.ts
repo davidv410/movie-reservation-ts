@@ -3,8 +3,6 @@ import { db } from "../db/db.js";
 import type { createReservationBody } from "../validation/schemas.js";
 import { eq, and, inArray } from "drizzle-orm";
 import { AppError } from "../types.js";
-import { sendEmailSeatConfirmation, sendEmailSeatCancelation } from "./emailNotifications.service.js";
-import { emailQueue } from "./queues/email.queue.js";
 import { cleanupQueue } from "./queues/cleanup.queue.js";
 import { stripe } from "../lib/stripe.js";
 
@@ -74,7 +72,7 @@ export class ReservationsService {
         const transaction = await db.transaction(async(tx) => {
             const waitingSeats = []
             for(const seatId of data.seatIds){
-                const [seat] = await tx.select().from(seats).where(eq(seats.id, seatId)).for("update")
+                const [seat] = await tx.select().from(seats).where(eq(seats.id, seatId)).orderBy(seats.id).for("update")
                 if(!seat){ throw new AppError(404, "Seat not found") }
                 if(!seat?.isAvailable){ throw new AppError(400, "Seat is not available") }
                 waitingSeats.push(seat)
