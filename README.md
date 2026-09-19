@@ -35,7 +35,7 @@ const transaction = await db.transaction(async (tx) => {
 
 1. Seats get locked, reservations and payment are inserted as pending
 2. The frontend collects card details via Stripe's Payment Element and confirms the payment.
-3. A Stripe webhook (`payment_intent.succeeded` / `payment_intent.payment_failed` / `payment_intent.canceled` / `charge.refunded`) confirms or cancels a booking, never the initial request or the frontend's response.is the source of truth.
+3. A Stripe webhook (`payment_intent.succeeded` / `payment_intent.payment_failed` / `payment_intent.canceled` / `charge.refunded`) confirms or cancels a booking
 4. A declined card attempt does not release the seat. Only an explicit cancellation or a successful payment resolves a `pending_payment` reservation.
 5. Cancelling a paid (`confirmed`) reservation triggers a Stripe refund. Since one payment can cover multiple seats booked together, cancelling any one seat refunds and cancels the entire booking.
 
@@ -59,7 +59,6 @@ Two queues, backed by the same Upstash Redis instance used for rate limiting (vi
 - Book multiple seats atomically, pay via Stripe, view bookings, cancel with automatic refund
 - Confirmation/cancellation emails via Resend, sent through a BullMQ queue
 - Abandoned-checkout cleanup so unpaid seat holds don't lock seats forever
-- Book / view / cancel reservations, cancelling frees the seat back up
 - Rate limiting with Upstash Redis
 - Zod for request validation
 
