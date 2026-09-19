@@ -11,5 +11,6 @@ export class GenresService {
 
         const result = await db.select().from(genres)
         await redis.set(key, JSON.stringify(result), { ex: 60 * 60 })
+        return result
     }
 }
