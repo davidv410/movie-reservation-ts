@@ -31,6 +31,9 @@ jobs:
           STRIPE_PUBLISH_KEY: ${{ secrets.STRIPE_PUBLISH_KEY }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          DISABLE_RATE_LIMIT: ${{ secrets.DISABLE_RATE_LIMIT }}
+          ENABLE_CACHE: ${{ secrets.ENABLE_CACHE }}
 
   build:
     needs: test
