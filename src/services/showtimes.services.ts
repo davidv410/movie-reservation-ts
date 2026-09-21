@@ -3,14 +3,14 @@ import { db } from "../db/db.js";
 import {reservations, seats, showtimes, movies} from "../db/schema.js";
 import type { createShowtimeBody, updateShowtimeBody } from "../validation/schemas.js";
 import { AppError } from "../types.js";
-import { redis } from "../lib/redis.js";
+import { delCache, getCache, redis, setCache } from "../lib/redis.js";
 
 export class ShowtimesService{
     async findShowtimes(date?: string, movieId?: string){
         const key = "showtimes"
 
         if(!date && !movieId){
-            const cached = await redis.get(key)
+            const cached = await getCache(key)
             if(cached) { return cached }
         }
 
@@ -33,7 +33,7 @@ export class ShowtimesService{
 
         const result = await db.select().from(showtimes).leftJoin(movies, eq(showtimes.movieId, movies.id)).where(gt(showtimes.startsAt, new Date()))
 
-        await redis.set(key, JSON.stringify(result),  { ex: 60 * 60 })
+        await setCache(key, JSON.stringify(result))
 
         return result
     }
@@ -41,12 +41,12 @@ export class ShowtimesService{
     async findShowtime(id: string){
         const key = `showtime:${id}`
 
-        const cached = await redis.get(key)
+        const cached = await getCache(key)
         if(cached) { return cached }
 
         const [showtime] = await db.select().from(showtimes).where(eq(showtimes.id, id))
 
-        await redis.set(key, JSON.stringify(showtime), { ex: 60 * 60 })
+        await setCache(key, JSON.stringify(showtime))
 
         if(!showtime){ throw new AppError(404, "Showtime not found") }
 
@@ -101,7 +101,7 @@ export class ShowtimesService{
             await tx.insert(seats).values(finalSeats)
             return { showtime }
         })
-        await redis.del(`showtime`)
+        await delCache(`showtime`)
         return { showtime: transaction.showtime, seats: "created" }
     }
 
@@ -109,8 +109,8 @@ export class ShowtimesService{
         const [update] = await db.update(showtimes).set({ ...data }).where(eq(showtimes.id, id)).returning()
         if(!update){ throw new AppError(404, "Showtime not found") }
 
-        await redis.del(`showtime:${id}`)
-        await redis.del(`showtime`)
+        await delCache(`showtime:${id}`)
+        await delCache(`showtime`)
 
         return update
     }
@@ -119,8 +119,8 @@ export class ShowtimesService{
         const [remove] = await db.delete(showtimes).where(eq(showtimes.id, id)).returning()
         if(!remove){ throw new AppError(404, "Showtime not found") }
 
-        await redis.del(`showtime:${id}`)
-        await redis.del(`showtime`)
+        await delCache(`showtime:${id}`)
+        await delCache(`showtime`)
 
         return remove
     }

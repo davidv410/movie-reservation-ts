@@ -1,16 +1,19 @@
 import {db} from "../db/db.js";
 import {genres} from "../db/schema.js";
-import { redis } from "../lib/redis.js";
+import { getCache, setCache } from "../lib/redis.js";
 
 export class GenresService {
     async fetchGenres(){
         const key = 'genres'
 
-        const cached = await redis.get(key)
+        const cached = await getCache(key)
+
         if(cached) return cached
 
         const result = await db.select().from(genres)
-        await redis.set(key, JSON.stringify(result), { ex: 60 * 60 })
+
+        await setCache(key, JSON.stringify(result))
+
         return result
     }
 }

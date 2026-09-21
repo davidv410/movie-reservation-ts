@@ -3,7 +3,7 @@ import { db } from "../db/db.js";
 import { movies, genres, movieGenres } from "../db/schema.js";
 import { AppError } from "../types.js";
 import {asc, eq, ilike, inArray, and, sql} from "drizzle-orm";
-import { redis } from "../lib/redis.js";
+import { delCache, getCache, redis, setCache } from "../lib/redis.js";
 import { uuid } from "zod";
 import { getUrl, saveFile, deleteFile } from "../storage/r2.storage.js";
 
@@ -31,7 +31,7 @@ export class MovieService{
         const sortedGenres = genres.sort().join(',')
         const key = `movies:page=${page}:limit=${limit}:search=${search ?? ''}:genres=${sortedGenres}`
 
-        const cached = await redis.get<MoviesResult>(key)
+        const cached = await getCache<MoviesResult>(key)
 
         if(cached) return cached
 
@@ -73,7 +73,8 @@ export class MovieService{
         for (let i = 1; i <= pages; i++){ pageArr.push(i) }
 
         const result = { list, pageArr }
-        await redis.set(key, JSON.stringify(result), { ex: 30 })
+        // await redis.set(key, JSON.stringify(result), { ex: 30 })
+        await setCache(key, JSON.stringify(result))
 
         return result
     }
@@ -85,7 +86,7 @@ export class MovieService{
     async findMovie(id: string){
         const key = `movie:${id}`
 
-        const cached = await redis.get(key)
+        const cached = await await getCache(key)
         if(cached){ return cached }
         
         const movie = await db.select()
@@ -95,7 +96,7 @@ export class MovieService{
 
         if(!movie){ throw new AppError(404, "Movie not found") }
 
-        await redis.set(key, movie, { ex: 60 * 60 })
+        await setCache(key, movie)
 
         return movie
     }
@@ -156,7 +157,7 @@ export class MovieService{
             await deleteFile(oldFile.pathname.slice(1))
         }
 
-        await redis.del(`movie:${id}`)
+        await delCache(`movie:${id}`)
 
         return updateTransaction
     }
@@ -172,7 +173,7 @@ export class MovieService{
         await deleteFile(posterUrl)
         await db.delete(movies).where(eq(movies.id, movieId)).returning()
 
-        await redis.del(`movie:${movieId}`)
+         await delCache(`movie:${movieId}`)
 
         return { message: 'Movie removed' }
     }
