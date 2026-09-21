@@ -22,6 +22,7 @@ const app = express()
 app.use(cors({
     origin: [
         'http://localhost:5173',
+        'https://movie-reservation-frontend-tau.vercel.app'
     ],
     credentials: true,
 }));
