@@ -13,7 +13,11 @@ export const emailWorker = new Worker("email",
                 throw new Error(`Unknown job name: ${job.name}`)
         }
     },
-    {connection:workerConnection}
+    {
+        connection:workerConnection,
+        drainDelay: 120,         
+        stalledInterval: 300_000
+    }
 )
 
 emailWorker.on("completed", (job) => {

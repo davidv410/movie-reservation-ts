@@ -26,7 +26,11 @@ export const cleanupWorker = new Worker("cleanup",
                 throw new Error(`Unknown job name: ${job.name}`)
         }
     },
-    {connection:workerConnection}
+    {
+        connection: workerConnection,
+        drainDelay: 120,         
+        stalledInterval: 300_000
+    }
 )
 
 cleanupWorker.on("completed", (job) => {
